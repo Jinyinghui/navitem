@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY web/package*.json ./
 
-RUN npm ci --only=production
+RUN npm install
 
 COPY web/ ./
 
@@ -23,7 +23,7 @@ RUN mkdir -p uploads database
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm install
 
 COPY app.js config.js db.js ./
 COPY routes/ ./routes/

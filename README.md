@@ -90,7 +90,6 @@ nav-item/
    PORT=3000
    ADMIN_USERNAME=admin
    ADMIN_PASSWORD=123456
-   JWT_SECRET=your-secret-key
    ```
 
 5. **启动开发服务器**
@@ -114,7 +113,6 @@ nav-item/
 - `PORT`: 服务器端口号（默认: 3000）
 - `ADMIN_USERNAME`: 管理员用户名（默认: admin）
 - `ADMIN_PASSWORD`: 管理员密码（默认: 123456）
-- `JWT_SECRET`: JWT 密钥（默认: nav-item-jwt-secret-2024-secure-key）
 
 ### 数据库配置
 系统使用 SQLite 数据库，数据库文件会自动创建在项目/database/目录下。

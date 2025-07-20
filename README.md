@@ -103,6 +103,7 @@ nav-item/
 
 6. **访问应用**
    - 后端: http://localhost:3000
+   - 后台：http://localhost:3000/admin  默认用户名/密码：admin/123456
    - 前端: http://localhost:5173
 
 ## 🔧 配置说明

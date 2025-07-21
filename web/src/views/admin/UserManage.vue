@@ -119,6 +119,7 @@ function showMessage(text, type) {
 }
 
 .section-title {
+  text-align: center;
   font-size: 1.2rem;
   font-weight: 500;
   color: #222;
@@ -163,6 +164,7 @@ function showMessage(text, type) {
 }
 
 .form-actions {
+  text-align: center;
   margin-top: 24px;
 }
 

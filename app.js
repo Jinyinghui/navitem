@@ -16,16 +16,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'web/dist')));
 
 app.use((req, res, next) => {
   if (
     req.method === 'GET' &&
     !req.path.startsWith('/api') &&
     !req.path.startsWith('/uploads') &&
-    !fs.existsSync(path.join(__dirname, 'public', req.path))
+    !fs.existsSync(path.join(__dirname, 'web/dist', req.path))
   ) {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'web/dist', 'index.html'));
   } else {
     next();
   }

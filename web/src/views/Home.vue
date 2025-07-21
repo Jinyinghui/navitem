@@ -32,12 +32,7 @@
       </a>
     </div>
     
-    <div class="content-wrapper">
-      <!-- 主要内容区域 -->
-      <div class="main-content">
-        <CardGrid :cards="filteredCards"/>
-      </div>
-    </div>
+    <CardGrid :cards="filteredCards"/>
     
     <footer class="footer">
       <div class="footer-content">
@@ -188,7 +183,7 @@ function handleLogoError(event) {
 .search-section {
   display: flex;
   justify-content: center;
-  padding: 4rem 0;
+  padding: 3rem 0;
   position: relative;
   z-index: 2;
 }
@@ -299,6 +294,7 @@ function handleLogoError(event) {
 .footer {
   margin-top: auto;
   text-align: center;
+  padding-top: 1rem;
   padding-bottom: 2rem;
   position: relative;
   z-index: 2;
@@ -398,6 +394,11 @@ function handleLogoError(event) {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 12px;
+}
+@media (max-width: 768px) {
+  .friend-links-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .friend-link-card {
@@ -555,6 +556,33 @@ function handleLogoError(event) {
     height: 50px;
     font-size: 12px;
     padding: 1rem 0.5rem;
+  }
+  .footer {
+    padding-top: 2rem;
+  }
+  .friend-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.7rem;
+    padding: 0;
+  }
+  .copyright {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.7rem;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  .footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
   }
 }
 </style> 

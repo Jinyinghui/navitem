@@ -38,7 +38,10 @@ async function loadMenus() {
 }
 async function addMenu() {
   if (!newMenuName.value) return;
-  await apiAddMenu({ name: newMenuName.value });
+  const maxOrder = menus.value.length
+    ? Math.max(...menus.value.map(m => m.order || 0))
+    : 0;
+  await apiAddMenu({ name: newMenuName.value, order: maxOrder + 1 });
   newMenuName.value = '';
   loadMenus();
 }

@@ -26,7 +26,7 @@
   
   <div v-else class="admin-layout">
     <aside class="admin-sider">
-      <div class="logo">Admin</div>
+      <div class="logo clickable" @click="page='welcome'">Admin</div>
       <ul class="menu-list">
         <li :class="{active: page==='menu'}" @click="page='menu'">栏目管理</li>
         <li :class="{active: page==='card'}" @click="page='card'">卡片管理</li>
@@ -46,6 +46,25 @@
         </div>
       </div>
       <div class="admin-content">
+        <div v-if="page==='welcome'" class="welcome-page">
+          <h2 class="welcome-title">欢迎您进入 Nav-Item 后台管理系统</h2>
+          <div class="welcome-cards">
+            <div class="welcome-card">
+              <div class="welcome-icon time-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#1abc9c" stroke-width="2"/><path d="M12 6v6l4 2" stroke="#1abc9c" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+              <div class="welcome-label">上次登录时间</div>
+              <div class="welcome-value">{{ lastLoginTime || '--' }}</div>
+            </div>
+            <div class="welcome-card">
+              <div class="welcome-icon ip-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#1abc9c" stroke-width="2"/><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" stroke="#1abc9c" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="#1abc9c"/></svg>
+              </div>
+              <div class="welcome-label">上次登录IP</div>
+              <div class="welcome-value">{{ lastLoginIp || '--' }}</div>
+            </div>
+          </div>
+        </div>
         <MenuManage v-if="page==='menu'" />
         <CardManage v-if="page==='card'" />
         <AdManage v-if="page==='ad'" />
@@ -68,7 +87,9 @@ import AdManage from './admin/AdManage.vue';
 import FriendLinkManage from './admin/FriendLinkManage.vue';
 import UserManage from './admin/UserManage.vue';
 
-const page = ref('menu');
+const page = ref('welcome');
+const lastLoginTime = ref('');
+const lastLoginIp = ref('');
 const isLoggedIn = ref(false);
 const username = ref('');
 const password = ref('');
@@ -90,7 +111,22 @@ const pageTitle = computed(() => {
 onMounted(() => {
   const token = localStorage.getItem('token');
   isLoggedIn.value = !!token;
+  if (isLoggedIn.value) {
+    // 拉取用户信息
+    fetchLastLoginInfo();
+  }
 });
+async function fetchLastLoginInfo() {
+  // 这里假设有 /api/users/me 接口返回当前用户信息
+  try {
+    const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    if (res.ok) {
+      const data = await res.json();
+      lastLoginTime.value = data.last_login_time || '';
+      lastLoginIp.value = data.last_login_ip || '';
+    }
+  } catch {}
+}
 
 async function handleLogin() {
   if (!username.value || !password.value) {
@@ -106,6 +142,8 @@ async function handleLogin() {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
       isLoggedIn.value = true;
+      lastLoginTime.value = response.data.lastLoginTime || '';
+      lastLoginIp.value = response.data.lastLoginIp || '';
     }
   } catch (error) {
     loginError.value = error.response?.data?.message || '登录失败，请检查用户名和密码';
@@ -223,12 +261,18 @@ function goHome() {
   box-shadow: 2px 0 8px rgba(0,0,0,0.06);
 }
 .logo {
-  font-size: 22px;
+  font-size: 2rem;
   font-weight: bold;
   text-align: center;
   margin-bottom: 32px;
   letter-spacing: 2px;
-  color: #2566d8;
+  color: #1349a6;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+.logo.clickable:hover {
+  color: #176efa;
 }
 .menu-list {
   list-style: none;
@@ -377,5 +421,65 @@ function goHome() {
   width: 22px;
   height: 22px;
   pointer-events: none;
+}
+.welcome-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 48px;
+}
+.welcome-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 32px;
+}
+.welcome-cards {
+  display: flex;
+  gap: 32px;
+}
+.welcome-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 32px 40px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1.5px solid #e3e6ef;
+}
+.welcome-icon {
+  width: 48px;
+  height: 48px;
+  background: #f5f6fa;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.welcome-label {
+  font-size: 1.1rem;
+  color: #222;
+  margin-bottom: 8px;
+}
+.welcome-value {
+  font-size: 2rem;
+  color: #1abc9c;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+@media (max-width: 900px) {
+  .welcome-cards {
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+  }
+  .welcome-card {
+    min-width: 220px;
+    width: 90vw;
+    padding: 24px 10px;
+  }
 }
 </style> 

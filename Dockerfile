@@ -19,7 +19,7 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-RUN mkdir -p uploads database
+RUN mkdir -p uploads database web/dist
 
 COPY package*.json ./
 
@@ -28,10 +28,9 @@ RUN npm install
 COPY app.js config.js db.js ./
 COPY routes/ ./routes/
 
-COPY --from=frontend-builder /app/public ./public
+COPY --from=frontend-builder /app/dist ./web/dist
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
 EXPOSE 3000/tcp
 

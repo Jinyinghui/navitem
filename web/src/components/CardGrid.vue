@@ -1,10 +1,9 @@
 <template>
-  <div class="card-grid">
+  <div class="container card-grid">
     <div v-for="card in cards" :key="card.id" class="link-item">
-      <a :href="card.url" target="_blank"
-         :title="getTooltip(card)">
+      <a :href="card.url" target="_blank" :title="getTooltip(card)">
         <img class="link-icon" :src="getLogo(card)" :alt="card.title" @error="onImgError($event, card)">
-        <span class="link-text">{{ card.title }}</span>
+        <span class="link-text">{{ truncate(card.title) }}</span>
       </a>
     </div>
   </div>
@@ -32,105 +31,89 @@ function getTooltip(card) {
   tip += card.url;
   return tip;
 }
+function truncate(str) {
+  if (!str) return '';
+  return str.length > 20 ? str.slice(0, 20) + '...' : str;
+}
 </script>
 
 <style scoped>
-.card-grid {
-  max-width: 1200px;
+.container {
+  max-width: 55rem;
   margin: 0 auto;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
-  padding: 0 2rem;
-  position: relative;
-  z-index: 2;
+  gap: 15px;
 }
-
+@media (max-width: 1200px) {
+  .container {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 .link-item {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: 15px;
-  padding: 15px 20px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
-  height: 50px;
+  min-height: 85px;
+  height: 85px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
 .link-item:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
 }
-
 .link-item a {
+  /* margin-top: 8px; */
   text-decoration: none;
-  color: #fff;
+  color: #ffffff;
+  font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  justify-content: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  box-sizing: border-box;
 }
-
 .link-icon {
   width: 28px;
   height: 28px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
-
 .link-text {
-  font-size: 13px;
+  padding-right: 4px;
+  padding-left: 4px;
+  font-size: 14px;
   text-align: center;
-  word-break: break-word;
+  word-break: break-all;
   max-width: 100%;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-@media (max-width: 1200px) {
-  .card-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    padding: 0 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .card-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  
-  .link-item {
-    height: 45px;
-    padding: 12px 8px;
-  }
-  
-  .link-icon {
-    width: 24px;
-    height: 24px;
-  }
-  
-  .link-text {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .card-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1;
+  min-height: 0.5em;
 }
 </style> 

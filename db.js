@@ -60,7 +60,6 @@ db.serialize(() => {
       const stmt = db.prepare('INSERT INTO menus (name, "order") VALUES (?, ?)');
       defaultMenus.forEach(([name, order]) => stmt.run(name, order));
       stmt.finalize(() => {
-        // 确保菜单插入完成后再插入卡片
         console.log('菜单插入完成，开始插入默认卡片...');
         insertDefaultCards();
       });

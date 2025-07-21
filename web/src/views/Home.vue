@@ -343,7 +343,7 @@ function handleLogoError(event) {
 .modal-content {
   background: #8585859c;
   border-radius: 16px;
-  width: 60rem;
+  width: 55rem;
   height: 30rem;
   max-width: 95vw;
   max-height: 95vh;
@@ -418,7 +418,7 @@ function handleLogoError(event) {
 .friend-link-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-  background: #fff;
+  background: #ffffff8e;
 }
 
 .friend-link-logo {

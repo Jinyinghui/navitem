@@ -5,10 +5,29 @@ const router = express.Router();
 
 // 获取友链
 router.get('/', (req, res) => {
-  db.all('SELECT * FROM friends', [], (err, rows) => {
-    if (err) return res.status(500).json({error: err.message});
-    res.json(rows);
-  });
+  const { page, pageSize } = req.query;
+  if (!page && !pageSize) {
+    db.all('SELECT * FROM friends', [], (err, rows) => {
+      if (err) return res.status(500).json({error: err.message});
+      res.json(rows);
+    });
+  } else {
+    const pageNum = parseInt(page) || 1;
+    const size = parseInt(pageSize) || 10;
+    const offset = (pageNum - 1) * size;
+    db.get('SELECT COUNT(*) as total FROM friends', [], (err, countRow) => {
+      if (err) return res.status(500).json({error: err.message});
+      db.all('SELECT * FROM friends LIMIT ? OFFSET ?', [size, offset], (err, rows) => {
+        if (err) return res.status(500).json({error: err.message});
+        res.json({
+          total: countRow.total,
+          page: pageNum,
+          pageSize: size,
+          data: rows
+        });
+      });
+    });
+  }
 });
 // 新增友链
 router.post('/', auth, (req, res) => {

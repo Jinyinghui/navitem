@@ -87,9 +87,19 @@ async function handleChangePassword() {
 function showMessage(text, type) {
   message.value = text;
   messageType.value = type;
-  setTimeout(() => {
-    message.value = '';
-  }, 3000);
+  if (text === '密码修改成功' && type === 'success') {
+    setTimeout(() => {
+      message.value = '3秒后自动退出登录,请使用新密码重新登录...';
+      setTimeout(() => {
+        localStorage.removeItem('token');
+        window.location.reload();
+      }, 3000);
+    }, 500);
+  } else {
+    setTimeout(() => {
+      message.value = '';
+    }, 3000);
+  }
 }
 </script>
 
@@ -206,5 +216,30 @@ function showMessage(text, type) {
   background: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+
+@media (max-width: 768px) {
+  .user-manage {
+    width: 100%;
+    padding: 0 2vw;
+  }
+  .user-card {
+    width: 80%;
+    padding: 12px 2vw;
+  }
+  .password-form {
+    max-width: 100%;
+  }
+  .input {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+    padding: 8px 8px;
+  }
+  .btn {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 14px;
+  }
 }
 </style> 

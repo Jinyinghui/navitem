@@ -89,6 +89,7 @@ async function deleteMenu(id) {
   padding: 32px 24px;
 }
 .input {
+  width: 15rem;
   padding: 12px 12px;
   border-radius: 10px;
   border: 1px solid #d0d7e2;
@@ -153,5 +154,54 @@ async function deleteMenu(id) {
 .menu-table td:last-child {
   text-align: center;
   vertical-align: middle;
+}
+@media (max-width: 768px) {
+  .menu-manage {
+    width: 100%;
+    padding: 0 2vw;
+  }
+  .menu-header, .menu-add {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .menu-card {
+    width: 92%;
+    padding: 12px 2vw;
+  }
+  .menu-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  .menu-table thead, .menu-table tbody, .menu-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .menu-table th, .menu-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .menu-table td input {
+    width: 80%;
+  }
+  .input {
+    width: 91%;
+    min-width: 0;
+    margin-right: 0;
+    font-size: 14px;
+    padding: 8px 8px;
+  }
+  .order-input {
+    width: 50px;
+  }
+  .btn {
+    width: 100%;
+    margin-right: 0;
+    padding: 8px 0;
+    font-size: 14px;
+  }
 }
 </style> 

@@ -25,22 +25,25 @@
   </div>
   
   <div v-else class="admin-layout">
-    <aside class="admin-sider">
-      <div class="logo clickable" @click="page='welcome'">Admin</div>
+    <aside class="admin-sider" :class="{ open: siderOpen }" @click.self="closeSider">
+      <div class="logo clickable" @click="page='welcome'; closeSider()">Admin</div>
       <ul class="menu-list">
-        <li :class="{active: page==='menu'}" @click="page='menu'">栏目管理</li>
-        <li :class="{active: page==='card'}" @click="page='card'">卡片管理</li>
-        <li :class="{active: page==='ad'}" @click="page='ad'">广告管理</li>
-        <li :class="{active: page==='friend'}" @click="page='friend'">友链管理</li>
-        <li :class="{active: page==='user'}" @click="page='user'">用户管理</li>
+        <li :class="{active: page==='menu'}" @click="page='menu'; closeSider()">栏目管理</li>
+        <li :class="{active: page==='card'}" @click="page='card'; closeSider()">卡片管理</li>
+        <li :class="{active: page==='ad'}" @click="page='ad'; closeSider()">广告管理</li>
+        <li :class="{active: page==='friend'}" @click="page='friend'; closeSider()">友链管理</li>
+        <li :class="{active: page==='user'}" @click="page='user'; closeSider()">用户管理</li>
       </ul>
     </aside>
     <main class="admin-main">
       <div class="admin-header">
+        <button class="menu-toggle" @click="toggleSider">
+          &#9776;
+        </button>
         <div class="header-title">{{ pageTitle }}</div>
         <div class="header-actions">
           <span class="home-icon" @click="goHome" title="进入主页">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4h-4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4h-4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </span>
           <button class="btn logout-btn" @click="logout">退出登录</button>
         </div>
@@ -96,6 +99,7 @@ const password = ref('');
 const loading = ref(false);
 const loginError = ref('');
 const showPassword = ref(false);
+const siderOpen = ref(false);
 
 const pageTitle = computed(() => {
   switch (page.value) {
@@ -162,6 +166,12 @@ function logout() {
 
 function goHome() {
   window.open('/', '_blank');
+}
+function toggleSider() {
+  siderOpen.value = !siderOpen.value;
+}
+function closeSider() {
+  siderOpen.value = false;
 }
 </script>
 
@@ -259,6 +269,11 @@ function goHome() {
   align-items: stretch;
   padding-top: 32px;
   box-shadow: 2px 0 8px rgba(0,0,0,0.06);
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
 }
 .logo {
   font-size: 2rem;
@@ -297,7 +312,7 @@ function goHome() {
 .admin-main {
   flex: 1;
   background: #f5f6fa;
-  padding: 0;
+  padding: 64px 0 0 180px;
   min-width: 0;
   overflow-x: auto;
   display: flex;
@@ -311,9 +326,11 @@ function goHome() {
   height: 64px;
   padding: 0 48px 0 0;
   background: #f5f6fa;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 10;
+  left: 180px;
+  right: 0;
+  z-index: 101;
   border-bottom: 1px solid #e3e6ef;
 }
 .header-title {
@@ -363,6 +380,7 @@ function goHome() {
   flex-direction: column;
   align-items: center;
   padding: 32px 0 0 0;
+  margin-top: 0;
 }
 .admin-footer {
   margin-top: auto;
@@ -429,6 +447,7 @@ function goHome() {
   margin-top: 48px;
 }
 .welcome-title {
+  text-align: center;
   font-size: 2rem;
   font-weight: 600;
   color: #222;
@@ -481,5 +500,76 @@ function goHome() {
     width: 90vw;
     padding: 24px 10px;
   }
+}
+@media (max-width: 768px) {
+  .admin-sider {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 70vw;
+    max-width: 260px;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.12);
+    background: #fff;
+  }
+  .admin-sider.open {
+    transform: translateX(0);
+  }
+  .admin-main {
+    padding: 64px 0 0 0 !important;
+  }
+  .admin-header {
+    left: 0 !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    padding: 0 8px 0 8px !important;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    height: 56px;
+  }
+  .header-title {
+    font-size: 1.1rem !important;
+    margin-left: 0 !important;
+    text-align: left !important;
+    width: auto !important;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 1px;
+  }
+  .header-actions {
+    gap: 4px;
+    margin-left: 0;
+  }
+  .btn.logout-btn {
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 4px !important;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #2566d8;
+    z-index: 300;
+  }
+  /* 表单和按钮间距优化 */
+  .input, .btn {
+    margin-bottom: 8px;
+  }
+}
+.menu-toggle {
+  display: none;
 }
 </style> 

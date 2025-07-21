@@ -5,10 +5,29 @@ const router = express.Router();
 
 // 获取所有菜单（公开）
 router.get('/', (req, res) => {
-  db.all('SELECT * FROM menus ORDER BY "order"', [], (err, rows) => {
-    if (err) return res.status(500).json({error: err.message});
-    res.json(rows);
-  });
+  const { page, pageSize } = req.query;
+  if (!page && !pageSize) {
+    db.all('SELECT * FROM menus ORDER BY "order"', [], (err, rows) => {
+      if (err) return res.status(500).json({error: err.message});
+      res.json(rows);
+    });
+  } else {
+    const pageNum = parseInt(page) || 1;
+    const size = parseInt(pageSize) || 10;
+    const offset = (pageNum - 1) * size;
+    db.get('SELECT COUNT(*) as total FROM menus', [], (err, countRow) => {
+      if (err) return res.status(500).json({error: err.message});
+      db.all('SELECT * FROM menus ORDER BY "order" LIMIT ? OFFSET ?', [size, offset], (err, rows) => {
+        if (err) return res.status(500).json({error: err.message});
+        res.json({
+          total: countRow.total,
+          page: pageNum,
+          pageSize: size,
+          data: rows
+        });
+      });
+    });
+  }
 });
 
 // 新增、修改、删除菜单需认证

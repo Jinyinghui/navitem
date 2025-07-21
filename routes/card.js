@@ -5,18 +5,43 @@ const router = express.Router();
 
 // 获取卡片（公开）
 router.get('/', (req, res) => {
-  const { menu_id } = req.query;
-  db.all('SELECT * FROM cards WHERE menu_id=? ORDER BY "order"', [menu_id], (err, rows) => {
-    if (err) return res.status(500).json({error: err.message});
-    rows.forEach(card => {
-      if (!card.custom_logo_path) {
-        card.display_logo = card.logo_url || (card.url.replace(/\/+$/, '') + '/favicon.ico');
-      } else {
-        card.display_logo = '/uploads/' + card.custom_logo_path;
-      }
+  const { menu_id, page, pageSize } = req.query;
+  if (!page && !pageSize) {
+    db.all('SELECT * FROM cards WHERE menu_id=? ORDER BY "order"', [menu_id], (err, rows) => {
+      if (err) return res.status(500).json({error: err.message});
+      rows.forEach(card => {
+        if (!card.custom_logo_path) {
+          card.display_logo = card.logo_url || (card.url.replace(/\/+$/, '') + '/favicon.ico');
+        } else {
+          card.display_logo = '/uploads/' + card.custom_logo_path;
+        }
+      });
+      res.json(rows);
     });
-    res.json(rows);
-  });
+  } else {
+    const pageNum = parseInt(page) || 1;
+    const size = parseInt(pageSize) || 10;
+    const offset = (pageNum - 1) * size;
+    db.get('SELECT COUNT(*) as total FROM cards WHERE menu_id=?', [menu_id], (err, countRow) => {
+      if (err) return res.status(500).json({error: err.message});
+      db.all('SELECT * FROM cards WHERE menu_id=? ORDER BY "order" LIMIT ? OFFSET ?', [menu_id, size, offset], (err, rows) => {
+        if (err) return res.status(500).json({error: err.message});
+        rows.forEach(card => {
+          if (!card.custom_logo_path) {
+            card.display_logo = card.logo_url || (card.url.replace(/\/+$/, '') + '/favicon.ico');
+          } else {
+            card.display_logo = '/uploads/' + card.custom_logo_path;
+          }
+        });
+        res.json({
+          total: countRow.total,
+          page: pageNum,
+          pageSize: size,
+          data: rows
+        });
+      });
+    });
+  }
 });
 
 // 新增卡片

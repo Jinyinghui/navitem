@@ -57,12 +57,35 @@ router.put('/password', authMiddleware, (req, res) => {
 
 // 获取所有用户（管理员功能）
 router.get('/', authMiddleware, (req, res) => {
-  db.all('SELECT id, username FROM users', (err, users) => {
-    if (err) {
-      return res.status(500).json({ message: '服务器错误' });
-    }
-    res.json({ data: users });
-  });
+  const { page, pageSize } = req.query;
+  if (!page && !pageSize) {
+    db.all('SELECT id, username FROM users', (err, users) => {
+      if (err) {
+        return res.status(500).json({ message: '服务器错误' });
+      }
+      res.json({ data: users });
+    });
+  } else {
+    const pageNum = parseInt(page) || 1;
+    const size = parseInt(pageSize) || 10;
+    const offset = (pageNum - 1) * size;
+    db.get('SELECT COUNT(*) as total FROM users', [], (err, countRow) => {
+      if (err) {
+        return res.status(500).json({ message: '服务器错误' });
+      }
+      db.all('SELECT id, username FROM users LIMIT ? OFFSET ?', [size, offset], (err, users) => {
+        if (err) {
+          return res.status(500).json({ message: '服务器错误' });
+        }
+        res.json({
+          total: countRow.total,
+          page: pageNum,
+          pageSize: size,
+          data: users
+        });
+      });
+    });
+  }
 });
 
 module.exports = router; 

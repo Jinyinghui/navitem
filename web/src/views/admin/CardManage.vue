@@ -134,6 +134,9 @@ async function deleteCard(id) {
 .input:focus {
   outline: 2px solid #2566d8;
 }
+.input {
+  width: 12rem;
+}
 .btn {
   background: #2566d8;
   color: #fff;
@@ -203,5 +206,56 @@ async function deleteCard(id) {
   min-width: 80px;
   max-width: 80px;
   text-align: center;
+}
+@media (max-width: 768px) {
+  .menu-table td input{
+    width: 80%;
+  }
+  .card-manage {
+    width: 100%;
+    padding: 0 2vw;
+  }
+  .card-header, .card-add {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 95%;
+  }
+  .card-card {
+    width: 92%;
+    padding: 12px 2vw;
+  }
+  .card-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  .card-table thead, .card-table tbody, .card-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .card-table th, .card-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .input, .card-add select, .card-add .btn {
+    width: 100%;
+    min-width: 0;
+    margin-right: 0;
+    font-size: 14px;
+    padding: 8px 8px;
+    height: 32px !important;
+  }
+  .order-input {
+    width: 50px;
+  }
+  .btn {
+    width: 100%;
+    margin-right: 0;
+    padding: 8px 0;
+    font-size: 14px;
+  }
 }
 </style> 

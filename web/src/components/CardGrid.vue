@@ -2,7 +2,7 @@
   <div class="container card-grid">
     <div v-for="card in cards" :key="card.id" class="link-item">
       <a :href="card.url" target="_blank" :title="getTooltip(card)">
-        <img class="link-icon" :src="getLogo(card)" :alt="card.title" @error="onImgError($event, card)">
+        <img class="link-icon" :src="getLogo(card)" :alt="card.title" @error="onImgError($event, card)" loading="lazy">
         <span class="link-text">{{ truncate(card.title) }}</span>
       </a>
     </div>

@@ -15,6 +15,7 @@ function getClientIp(req) {
 
 function getShanghaiTime() {
   const date = new Date();
+  // 东八区偏移
   const offset = 8 * 60;
   const local = new Date(date.getTime() + (date.getTimezoneOffset() + offset) * 60000);
   return local.toISOString().replace('T', ' ').slice(0, 19);

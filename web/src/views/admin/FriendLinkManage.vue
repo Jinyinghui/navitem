@@ -92,6 +92,7 @@ async function deleteFriend(id) {
   padding: 32px 24px;
 }
 .input {
+  width: 15rem;
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid #d0d7e2;
@@ -157,5 +158,50 @@ async function deleteFriend(id) {
 .friend-table td:last-child {
   text-align: center;
   vertical-align: middle;
+}
+@media (max-width: 768px) {
+  .friend-manage {
+    width: 92%;
+    padding: 0 2vw;
+  }
+  .friend-add {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+  .friend-card {
+    width: 100%;
+    padding: 12px 2vw;
+  }
+  .friend-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  .friend-table thead, .friend-table tbody, .friend-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .friend-table th, .friend-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .input {
+    width: 95%;
+    min-width: 0;
+    margin-right: 0;
+    font-size: 14px;
+    padding: 8px 8px;
+    height: 32px !important;
+  }
+  .btn {
+    width: 100%;
+    margin-right: 0;
+    padding: 8px 0;
+    font-size: 14px;
+  }
 }
 </style> 

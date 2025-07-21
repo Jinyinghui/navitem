@@ -232,4 +232,62 @@ async function deleteAd(id) {
   min-width: 200px;
   max-width: 100%;
 }
+@media (max-width: 768px) {
+  .admin-content{
+    width: 92%;
+  }
+  .ad-manage {
+    width: 100%;
+    padding: 0 2vw;
+  }
+  .ad-header, .ad-add-row {
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    width: 92%;
+    margin: 0 auto;
+    padding: 8px 0 !important;
+  }
+  .ad-section {
+    width: 92%;
+    padding-top: 10rem;
+    margin-bottom: -8rem;
+  }
+  .ad-card {
+    width: 100%;
+    padding: 12px 2vw;
+  }
+  .ad-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    font-size: 14px;
+  }
+  .ad-table thead, .ad-table tbody, .ad-table tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  .ad-table th, .ad-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  .input, .select-input {
+    width: 92%;
+    min-width: 0;
+    margin-right: 0;
+    font-size: 14px;
+    padding: 8px 8px;
+    height: 32px !important;
+  }
+  .ad-add-row input.input {
+    margin: 0 auto;
+  }
+  .btn {
+    width: 96%;
+    margin-right: 0;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+}
 </style> 

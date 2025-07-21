@@ -2,33 +2,14 @@ version: '3'
 
 services:
   nav-item:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: eooce/nav-item
     container_name: nav-item
-    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD=123456
-      - JWT_SECRET=nav-item-jwt-secret-2024-secure-key
+      - PORT=3000             # 监听端口
+      - ADMIN_USERNAME=admin  # 后台用户名
+      - ADMIN_PASSWORD=123456 # 后台密码
     volumes:
-      # 持久化数据库文件
-      - ./database:/app/database
-      # 持久化上传文件
-      - ./uploads:/app/uploads
-    networks:
-      - nav-item-network
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-networks:
-  nav-item-network:
-    driver: bridge 
+      - ./database:/app/database  # 持久化数据库文件
+    restart: unless-stopped

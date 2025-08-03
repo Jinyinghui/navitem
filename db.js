@@ -279,10 +279,6 @@ db.serialize(() => {
     if (row && row.count === 0) {
       const defaultFriends = [
         ['Noodseek图床', 'https://www.nodeimage.com', 'https://www.nodeseek.com/static/image/favicon/favicon-32x32.png'],
-        ['igoutu', 'https://igoutu.cn', 'https://maxst.icons8.com/vue-static/landings/primary-landings/favs/icons8_fav_32×32.png'],
-        ['React', 'https://react.dev', 'https://react.dev/favicon.ico'],
-        ['Node.js', 'https://nodejs.org', 'https://nodejs.org/favicon.ico'],
-        ['Tailwind CSS', 'https://tailwindcss.com', 'https://tailwindcss.com/favicon.ico'],
         ['Font Awesome', 'https://fontawesome.com', 'https://fontawesome.com/favicon.ico']
       ];
       const stmt = db.prepare('INSERT INTO friends (title, url, logo) VALUES (?, ?, ?)');
@@ -294,5 +290,6 @@ db.serialize(() => {
   db.run(`ALTER TABLE users ADD COLUMN last_login_time TEXT`, [], () => {});
   db.run(`ALTER TABLE users ADD COLUMN last_login_ip TEXT`, [], () => {});
 });
+
 
 module.exports = db; 

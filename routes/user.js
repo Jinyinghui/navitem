@@ -18,6 +18,22 @@ router.get('/profile', authMiddleware, (req, res) => {
   });
 });
 
+// 获取当前用户详细信息（包括登录信息）
+router.get('/me', authMiddleware, (req, res) => {
+  db.get('SELECT id, username, last_login_time, last_login_ip FROM users WHERE id = ?', [req.user.id], (err, user) => {
+    if (err) {
+      return res.status(500).json({ message: '服务器错误' });
+    }
+    if (!user) {
+      return res.status(404).json({ message: '用户不存在' });
+    }
+    res.json({
+      last_login_time: user.last_login_time,
+      last_login_ip: user.last_login_ip
+    });
+  });
+});
+
 // 修改密码
 router.put('/password', authMiddleware, (req, res) => {
   const { oldPassword, newPassword } = req.body;

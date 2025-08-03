@@ -15,10 +15,18 @@ function getClientIp(req) {
 
 function getShanghaiTime() {
   const date = new Date();
-  // 东八区偏移
-  const offset = 8 * 60;
-  const local = new Date(date.getTime() + (date.getTimezoneOffset() + offset) * 60000);
-  return local.toISOString().replace('T', ' ').slice(0, 19);
+  // 获取上海时区时间
+  const shanghaiTime = new Date(date.toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
+  
+  // 格式化为 YYYY-MM-DD HH:mm:ss
+  const year = shanghaiTime.getFullYear();
+  const month = String(shanghaiTime.getMonth() + 1).padStart(2, '0');
+  const day = String(shanghaiTime.getDate()).padStart(2, '0');
+  const hours = String(shanghaiTime.getHours()).padStart(2, '0');
+  const minutes = String(shanghaiTime.getMinutes()).padStart(2, '0');
+  const seconds = String(shanghaiTime.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 router.post('/login', (req, res) => {

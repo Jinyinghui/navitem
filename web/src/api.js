@@ -8,12 +8,23 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// 菜单相关API
 export const getMenus = () => axios.get(`${BASE}/menus`);
 export const addMenu = (data) => axios.post(`${BASE}/menus`, data, { headers: authHeaders() });
 export const updateMenu = (id, data) => axios.put(`${BASE}/menus/${id}`, data, { headers: authHeaders() });
 export const deleteMenu = (id) => axios.delete(`${BASE}/menus/${id}`, { headers: authHeaders() });
 
-export const getCards = (menu_id) => axios.get(`${BASE}/cards`, { params: { menu_id } });
+// 子菜单相关API
+export const getSubMenus = (menuId) => axios.get(`${BASE}/menus/${menuId}/submenus`);
+export const addSubMenu = (menuId, data) => axios.post(`${BASE}/menus/${menuId}/submenus`, data, { headers: authHeaders() });
+export const updateSubMenu = (id, data) => axios.put(`${BASE}/menus/submenus/${id}`, data, { headers: authHeaders() });
+export const deleteSubMenu = (id) => axios.delete(`${BASE}/menus/submenus/${id}`, { headers: authHeaders() });
+
+// 卡片相关API
+export const getCards = (menuId, subMenuId = null) => {
+  const params = subMenuId ? { subMenuId } : {};
+  return axios.get(`${BASE}/cards/${menuId}`, { params });
+};
 export const addCard = (data) => axios.post(`${BASE}/cards`, data, { headers: authHeaders() });
 export const updateCard = (id, data) => axios.put(`${BASE}/cards/${id}`, data, { headers: authHeaders() });
 export const deleteCard = (id) => axios.delete(`${BASE}/cards/${id}`, { headers: authHeaders() });

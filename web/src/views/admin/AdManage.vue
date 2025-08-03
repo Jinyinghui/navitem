@@ -217,7 +217,7 @@ async function deleteAd(id) {
   gap: 16px;
   justify-content: center;
   align-items: center;
-  background: #f5f7fa;
+  background: linear-gradient(135deg,#667eea,#764ba2);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   padding: 24px 32px 16px 32px;
@@ -273,7 +273,7 @@ async function deleteAd(id) {
     font-size: 13px;
   }
   .input, .select-input {
-    width: 92%;
+    width: 84%;
     min-width: 0;
     margin-right: 0;
     font-size: 14px;
@@ -284,7 +284,7 @@ async function deleteAd(id) {
     margin: 0 auto;
   }
   .btn {
-    width: 96%;
+    width: 84%;
     margin-right: 0;
     padding: 8px 0;
     font-size: 14px;

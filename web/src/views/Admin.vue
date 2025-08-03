@@ -3,22 +3,31 @@
     <div class="login-card">
       <h2 class="login-title">后台管理登录</h2>
       <div class="login-form">
-        <input v-model="username" type="text" placeholder="用户名" class="login-input" />
+        <input v-model="username" type="text" placeholder="用户名" class="login-input" @keyup.enter="handleLogin" />
         <div class="password-input-wrapper">
           <input
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
             placeholder="密码"
             class="login-input password-input"
+            @keyup.enter="handleLogin"
           />
           <span class="toggle-password" @click="showPassword = !showPassword">
             <svg v-if="showPassword" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-6.06"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/></svg>
           </span>
         </div>
-        <button @click="handleLogin" class="login-btn" :disabled="loading">
-          {{ loading ? '登录中...' : '登录' }}
-        </button>
+        <div class="login-buttons">
+          <button @click="goHome" class="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            返回首页
+          </button>
+          <button @click="handleLogin" class="login-btn" :disabled="loading">
+            {{ loading ? '登录中...' : '登录' }}
+          </button>
+        </div>
         <p v-if="loginError" class="login-error">{{ loginError }}</p>
       </div>
     </div>
@@ -121,7 +130,6 @@ onMounted(() => {
   }
 });
 async function fetchLastLoginInfo() {
-  // 这里假设有 /api/users/me 接口返回当前用户信息
   try {
     const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
     if (res.ok) {
@@ -129,7 +137,9 @@ async function fetchLastLoginInfo() {
       lastLoginTime.value = data.last_login_time || '';
       lastLoginIp.value = data.last_login_ip || '';
     }
-  } catch {}
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+  }
 }
 
 async function handleLogin() {
@@ -181,7 +191,7 @@ function closeSider() {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: #f5f6fa;
+  background: linear-gradient(135deg,#667eea,#764ba2);
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 
@@ -189,16 +199,16 @@ function closeSider() {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  padding: 40px;
+  padding: 0 40px 40px 40px;
   width: 400px;
   max-width: 90%;
 }
 
 .login-title {
   text-align: center;
-  font-size: 24px;
+  font-size: 2rem;
   font-weight: bold;
-  color: #222;
+  color: #2164e1;
   margin-bottom: 32px;
   letter-spacing: 2px;
 }
@@ -245,6 +255,39 @@ function closeSider() {
 .login-btn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+.login-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.back-btn {
+  background: #f8f9fa;
+  color: #2b2b2b;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  background: #e9ecef;
+  color: #7e42ff;
+  border-color: #adb5bd;
+}
+
+.login-btn {
+  flex: 2;
 }
 
 .login-error {
@@ -336,7 +379,7 @@ function closeSider() {
 .header-title {
   flex: 1;
   text-align: center;
-  margin-left: 100px;
+  margin-left: 180px;
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 2px;
@@ -379,7 +422,7 @@ function closeSider() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 0 0 0;
+  padding: 10px 0 0 0;
   margin-top: 0;
 }
 .admin-footer {

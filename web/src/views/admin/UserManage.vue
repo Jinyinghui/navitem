@@ -89,11 +89,11 @@ function showMessage(text, type) {
   messageType.value = type;
   if (text === '密码修改成功' && type === 'success') {
     setTimeout(() => {
-      message.value = '3秒后自动退出登录,请使用新密码重新登录...';
+      message.value = '2秒后自动退出登录,请使用新密码重新登录...';
       setTimeout(() => {
         localStorage.removeItem('token');
         window.location.reload();
-      }, 3000);
+      }, 2000);
     }, 500);
   } else {
     setTimeout(() => {
@@ -122,15 +122,15 @@ function showMessage(text, type) {
 .user-card {
   width: 50%;
   margin: 0 auto;
-  background: #fff;
+  background: linear-gradient(135deg,#667eea,#764ba2);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  padding: 32px 24px;
+  padding: 10px 24px;
 }
 
 .section-title {
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   font-weight: 500;
   color: #222;
   margin-bottom: 20px;
@@ -220,7 +220,6 @@ function showMessage(text, type) {
 
 @media (max-width: 768px) {
   .user-manage {
-    width: 100%;
     padding: 0 2vw;
   }
   .user-card {

@@ -170,7 +170,7 @@ ghcr.io/eooce/nav-item:latest
   * `ADMIN_PASSWORD`后台管理密码
 
 ```bash
-https://github.com/eooce/nav-item/releases/download/ct8-and-serv00/install.sh
+bash <(curl -Ls https://github.com/eooce/nav-item/releases/download/ct8-and-serv00/install.sh) 
 ```
 
 ## 🤝 贡献指南
@@ -196,6 +196,7 @@ https://github.com/eooce/nav-item/releases/download/ct8-and-serv00/install.sh
 ---
 
 ⭐ 如果这个项目对你有帮助，请给它一个星标！ 
+
 
 
 

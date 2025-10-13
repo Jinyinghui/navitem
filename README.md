@@ -163,7 +163,7 @@ eooce/nav-item
 ghcr.io/eooce/nav-item:latest
 ```
 
-### serv00|ct8|Hostuno 一键安装脚本
+## serv00|ct8|Hostuno 一键安装脚本
 - 环境变量
   * `DOMAIN`为自定义站点域名
   * `ADMIN_USERNAME`后台管理用户名
@@ -196,5 +196,6 @@ https://github.com/eooce/nav-item/releases/download/ct8-and-serv00/install.sh
 ---
 
 ⭐ 如果这个项目对你有帮助，请给它一个星标！ 
+
 
 

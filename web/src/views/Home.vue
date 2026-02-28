@@ -130,8 +130,8 @@ const searchEngines = [
   {
     name: 'searxng',
     label: 'SearXNG',
-    placeholder: 'Google 搜索...',
-    url: q => `http://us.553423.xyz:2083/search?q=${encodeURIComponent(q)}`
+    placeholder: 'SearXNG 搜索...',
+    url: q => `https://searxng.553423.xyz/search?q=${encodeURIComponent(q)}`
   },
   {
     name: 'google',
@@ -744,3 +744,4 @@ function handleLogoError(event) {
 }
 
 </style> 
+

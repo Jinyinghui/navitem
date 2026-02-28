@@ -128,6 +128,12 @@ const friendLinks = ref([]);
 // 聚合搜索配置
 const searchEngines = [
   {
+    name: 'searxng',
+    label: 'SearXNG',
+    placeholder: 'Google 搜索...',
+    url: q => `http://us.553423.xyz:2083/search?q=${encodeURIComponent(q)}`
+  },
+  {
     name: 'google',
     label: 'Google',
     placeholder: 'Google 搜索...',
@@ -736,4 +742,5 @@ function handleLogoError(event) {
     gap: 20px;
   }
 }
+
 </style> 

@@ -2,11 +2,12 @@ require('dotenv').config();
 
 module.exports = {
   admin: {
-    username: process.env.ADMIN_USERNAME || 'admin',
+    username: process.env.ADMIN_USERNAME || 'yaohuiadmin',
     password: process.env.ADMIN_PASSWORD || '123456'
   },
   server: {
     port: process.env.PORT || 3000,
-    jwtSecret: process.env.JWT_SECRET || 'nav-item-jwt-secret-2024-secure-key'
+    jwtSecret: process.env.JWT_SECRET || 'nav-item-dev-secret-please-change'
   }
+
 }; 

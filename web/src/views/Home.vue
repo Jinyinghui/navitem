@@ -111,7 +111,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import { getMenus， getCards, getAds, getFriends } from '../api';
+import { getMenus, getCards, getAds, getFriends } from '../api';
 import MenuBar from '../components/MenuBar.vue';
 import CardGrid from '../components/CardGrid.vue';
 
@@ -128,38 +128,38 @@ const friendLinks = ref([]);
 // 聚合搜索配置
 const searchEngines = [
   {
-    name: 'searxng'，
+    name: 'searxng',
     label: 'SearXNG',
     placeholder: 'SearXNG 搜索...',
     url: q => `https://searxng.553423.xyz/search?q=${encodeURIComponent(q)}`
   },
   {
-    name: 'google'，
+    name: 'google',
     label: 'Google',
     placeholder: 'Google 搜索...',
     url: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`
   },
   {
     name: 'baidu',
-    label: 'Baidu'，
-    placeholder: '百度搜索...',
+    label: 'Baidu',
+    placeholder: 'Baidu 搜索...',
     url: q => `https://www.baidu.com/s?wd=${encodeURIComponent(q)}`
   },
   {
     name: 'bing',
     label: 'Bing',
-    placeholder: 'Bing 搜索...'，
+    placeholder: 'Bing 搜索...',
     url: q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`
-  }，
+  },
   {
-    name: 'github'，
+    name: 'github',
     label: 'GitHub',
     placeholder: 'GitHub 搜索...',
     url: q => `https://github.com/search?q=${encodeURIComponent(q)}&type=repositories`
   },
   {
     name: 'site',
-    label: 'Site',
+    label: '站内',
     placeholder: '站内搜索...',
     url: q => `/search?query=${encodeURIComponent(q)}`
   }
@@ -178,7 +178,7 @@ const filteredCards = computed(() => {
   if (!searchQuery.value) return cards.value;
   return cards.value.filter(card => 
     card.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    card.url。toLowerCase().includes(searchQuery.value.toLowerCase())
+    card.url.toLowerCase().includes(searchQuery.value.toLowerCase())
   );
 });
 
@@ -192,7 +192,7 @@ onMounted(async () => {
   // 加载广告
   const adRes = await getAds();
   leftAds.value = adRes.data.filter(ad => ad.position === 'left');
-  rightAds.value = adRes.data。filter(ad => ad.position === 'right');
+  rightAds.value = adRes.data.filter(ad => ad.position === 'right');
   
   const friendRes = await getFriends();
   friendLinks.value = friendRes.data;
@@ -234,7 +234,7 @@ async function handleSearch() {
         setTimeout(() => {
           const el = document.querySelector(`[data-card-id='${match.id}']`);
           if (el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
-        }， 100);
+        }, 100);
         found = true;
         break;
       }
@@ -388,7 +388,7 @@ function handleLogoError(event) {
   max-width: 480px;
 }
 
-。content-wrapper {
+.content-wrapper {
   display: flex;
   max-width: 1400px;
   margin: 0 auto;
@@ -744,5 +744,4 @@ function handleLogoError(event) {
 }
 
 </style> 
-
 

@@ -42,7 +42,7 @@ router.post('/login', (req, res) => {
         const now = getShanghaiTime();
         const ip = getClientIp(req);
         db.run('UPDATE users SET last_login_time=?, last_login_ip=? WHERE id=?', [now, ip, user.id]);
-        const token = jwt.sign({ id: user.id, username: user.username, sv: user.session_version ?? 0 }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.id, username: user.username, sv: user.session_version ?? 0 }, JWT_SECRET, { expiresIn: '2h' });
         res.json({ token, lastLoginTime, lastLoginIp });
       } else {
         res.status(401).json({ error: '用户名或密码错误' });

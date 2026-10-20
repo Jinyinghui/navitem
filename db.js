@@ -91,7 +91,7 @@ db.serialize(() => {
         ['bing', 'Bing', 'https://www.bing.com/search?q={q}', '使用 Microsoft Bing 搜索...', 0, 3],
         ['baidu', '百度', 'https://www.baidu.com/s?wd={q}', '使用百度搜索中文网页...', 0, 4],
         ['github', 'GitHub', 'https://github.com/search?q={q}&type=repositories', '在 GitHub 中搜索开源项目...', 0, 5],
-        ['searxng', 'SearXNG', 'https://searxng.553423.xyz/search?q={q}', '使用 SearXNG 隐私元搜索...', 0, 6]
+        ['searxng', 'SearXNG', 'https://searxng.hueiyao.com/search?q={q}', '使用 SearXNG 隐私元搜索...', 0, 6]
       ];
       const stmt = db.prepare('INSERT INTO search_engines (name, label, url_template, placeholder, is_default, "order") VALUES (?, ?, ?, ?, ?, ?)');
       defaultEngines.forEach(item => stmt.run(...item));

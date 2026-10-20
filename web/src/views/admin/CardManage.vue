@@ -79,8 +79,9 @@
               </div>
             </td>
             <td class="py-2.5 px-3">
-              <div class="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold text-xs">
-                {{ (card.title || 'N').charAt(0).toUpperCase() }}
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold text-xs overflow-hidden" :title="card.custom_logo_path ? '本地图标：' + card.custom_logo_path : (card.logo_url ? '图标 URL：' + card.logo_url : '站点默认 favicon')">
+                <img v-if="card.display_logo && !iconErrors[card.id]" :src="card.display_logo" alt="" class="w-5 h-5 object-contain" loading="lazy" @error="iconErrors[card.id] = true" />
+                <span v-else>{{ (card.title || 'N').charAt(0).toUpperCase() }}</span>
               </div>
             </td>
             <td class="py-2.5 px-3">
@@ -193,8 +194,11 @@ async function onMenuChange() {
   await loadCards();
 }
 
+const iconErrors = ref({});
+
 async function loadCards() {
   if (!selectedMenuId.value) return;
+  iconErrors.value = {};
   const res = await getCards(selectedMenuId.value, selectedSubMenuId.value || null);
   cards.value = res.data || [];
 }

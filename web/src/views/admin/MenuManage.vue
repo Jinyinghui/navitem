@@ -1,101 +1,96 @@
 <template>
-  <div class="menu-manage">
-    <div class="top-bar">
+  <div class="space-y-5">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 class="section-heading">栏目分类管理（支持拖拽排序）</h2>
-        <p class="section-sub">直接按住左侧拖拽手柄 ⠿ 即可上下拖动调整主菜单与二级子菜单顺序，松手自动保存</p>
+        <h2 class="text-base font-bold text-slate-100">栏目与二级分类管理</h2>
+        <p class="text-xs text-slate-400 mt-0.5">按住左侧 ⠿ 拖拽手柄即可上下拖动主菜单或二级子菜单调整顺序，松手自动保存并同步前台</p>
       </div>
-      <form class="menu-add" @submit.prevent="addMenu">
-        <input v-model="newMenuName" placeholder="输入新主菜单名称..." class="input" />
-        <button type="submit" class="btn btn-primary">+ 新增主菜单</button>
+      <form class="flex gap-2" @submit.prevent="handleAddMenu">
+        <input v-model="newMenuName" type="text" placeholder="输入新主菜单名称..." class="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:border-indigo-500 outline-none" />
+        <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">+ 新增主菜单</button>
       </form>
     </div>
 
-    <div class="menu-list">
+    <div class="space-y-3">
       <div
         v-for="(menu, mIdx) in menus"
         :key="menu.id"
-        class="menu-card"
-        :class="{
-          'is-dragging': dragMenuIndex === mIdx,
-          'is-drag-over': dragOverMenuIndex === mIdx && dragMenuIndex !== mIdx
-        }"
         draggable="true"
+        class="bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden transition"
+        :class="{
+          'is-dragging': dragMenuIdx === mIdx,
+          'is-drag-over': dragOverMenuIdx === mIdx && dragMenuIdx !== mIdx
+        }"
         @dragstart="onMenuDragStart($event, mIdx)"
         @dragover.prevent="onMenuDragOver($event, mIdx)"
         @drop.prevent="onMenuDrop($event, mIdx)"
         @dragend="onMenuDragEnd"
       >
-        <div class="main-menu-row">
-          <div class="menu-info">
-            <span class="drag-handle" title="按住上下拖动排序">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <div class="p-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3 flex-1 min-w-[200px]">
+            <span class="drag-handle p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition" title="按住上下拖动调整主菜单顺序">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/>
                 <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
                 <circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/>
               </svg>
             </span>
-            <span class="menu-badge">#{{ mIdx + 1 }}</span>
-            <input v-model="menu.name" class="name-input" @blur="updateMenu(menu)" />
+            <span class="px-2 py-1 rounded-md bg-indigo-500/15 text-indigo-400 text-xs font-bold">#{{ mIdx + 1 }}</span>
+            <input v-model="menu.name" type="text" class="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-100 focus:border-indigo-500 outline-none" @change="saveMenu(menu)" />
+            <span class="text-[11px] text-slate-500 hidden sm:inline">按住拖拽排序</span>
           </div>
-
-          <div class="menu-actions">
-            <div class="move-btns">
-              <button type="button" class="btn-move" :disabled="mIdx === 0" title="上移" @click="moveMenu(mIdx, -1)">↑</button>
-              <button type="button" class="btn-move" :disabled="mIdx === menus.length - 1" title="下移" @click="moveMenu(mIdx, 1)">↓</button>
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1">
+              <button type="button" :disabled="mIdx === 0" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" title="上移" @click="moveMenu(mIdx, -1)">↑</button>
+              <button type="button" :disabled="mIdx === menus.length - 1" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" title="下移" @click="moveMenu(mIdx, 1)">↓</button>
             </div>
-            <button type="button" class="btn btn-ghost" @click="toggleSubMenu(menu.id)">
-              <span>子菜单 ({{ menu.subMenus?.length || 0 }})</span>
-              <svg :class="{ rotated: menu.showSubMenu }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-medium transition" @click="toggleExpand(menu.id)">
+              子菜单 ({{ menu.subMenus?.length || 0 }}) {{ expanded[menu.id] ? '▴' : '▾' }}
             </button>
-            <button type="button" class="btn btn-danger-outline" @click="deleteMenu(menu.id)">删除</button>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-600 hover:text-white text-rose-400 text-xs font-medium transition" @click="removeMenu(menu.id)">
+              删除
+            </button>
           </div>
         </div>
 
-        <!-- 二级子菜单区域（同样支持拖拽排序） -->
-        <div v-if="menu.showSubMenu" class="submenu-panel">
-          <div class="submenu-add-row">
-            <input
-              v-model="subMenuDrafts[menu.id]"
-              placeholder="输入新子菜单名称..."
-              class="input input-sm"
-              @keyup.enter="addSubMenu(menu.id)"
-            />
-            <button type="button" class="btn btn-sm btn-primary" @click="addSubMenu(menu.id)">+ 添加子菜单</button>
+        <div v-if="expanded[menu.id]" class="bg-slate-950/70 border-t border-slate-800 p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex gap-2">
+              <input v-model="newSubNames[menu.id]" type="text" placeholder="输入新二级子菜单名称..." class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" @keyup.enter="handleAddSub(menu)" />
+              <button type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition" @click="handleAddSub(menu)">+ 添加子菜单</button>
+            </div>
+            <span class="text-[11px] text-slate-500">提示：子菜单同样支持上下拖拽排序</span>
           </div>
 
-          <div v-if="menu.subMenus && menu.subMenus.length > 0" class="submenu-items">
+          <div v-if="menu.subMenus && menu.subMenus.length > 0" class="space-y-2">
             <div
               v-for="(sub, sIdx) in menu.subMenus"
               :key="sub.id"
-              class="submenu-row"
-              :class="{
-                'is-dragging': dragSubInfo.menuId === menu.id && dragSubInfo.index === sIdx,
-                'is-drag-over': dragSubInfo.menuId === menu.id && dragSubInfo.overIndex === sIdx && dragSubInfo.index !== sIdx
-              }"
               draggable="true"
+              class="flex items-center justify-between gap-2 bg-slate-900 border-2 border-slate-800/80 rounded-xl px-3.5 py-2 transition"
               @dragstart.stop="onSubDragStart($event, menu.id, sIdx)"
-              @dragover.prevent.stop="onSubDragOver($event, menu.id, sIdx)"
+              @dragover.prevent.stop
               @drop.prevent.stop="onSubDrop($event, menu, sIdx)"
-              @dragend.stop="onSubDragEnd"
             >
-              <span class="drag-handle sub-handle" title="按住拖动调整子菜单顺序">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>
-                  <circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>
-                  <circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>
-                </svg>
-              </span>
-              <span class="sub-badge">{{ sIdx + 1 }}</span>
-              <input v-model="sub.name" class="name-input sub-name" @blur="updateSubMenu(sub)" />
-              <div class="move-btns">
-                <button type="button" class="btn-move" :disabled="sIdx === 0" title="上移" @click="moveSubMenu(menu, sIdx, -1)">↑</button>
-                <button type="button" class="btn-move" :disabled="sIdx === menu.subMenus.length - 1" title="下移" @click="moveSubMenu(menu, sIdx, 1)">↓</button>
+              <div class="flex items-center gap-2.5 flex-1">
+                <span class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition" title="按住拖动调整子菜单顺序">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
+                    <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
+                    <circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/>
+                  </svg>
+                </span>
+                <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[11px] font-bold">{{ sIdx + 1 }}</span>
+                <input v-model="sub.name" type="text" class="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 flex-1 max-w-xs" @change="saveSub(sub)" />
               </div>
-              <button type="button" class="btn btn-sm btn-danger-outline" @click="deleteSubMenu(sub.id)">删除</button>
+              <div class="flex items-center gap-1.5">
+                <button type="button" :disabled="sIdx === 0" class="w-6 h-6 rounded bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" title="上移" @click="moveSub(menu, sIdx, -1)">↑</button>
+                <button type="button" :disabled="sIdx === menu.subMenus.length - 1" class="w-6 h-6 rounded bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" title="下移" @click="moveSub(menu, sIdx, 1)">↓</button>
+                <button type="button" class="px-2.5 py-1 rounded-md bg-rose-500/10 hover:bg-rose-600 hover:text-white text-rose-400 text-xs transition" @click="removeSub(menu, sub.id)">删除</button>
+              </div>
             </div>
           </div>
-          <p v-else class="empty-hint">当前主菜单下暂无二级子菜单</p>
+          <p v-else class="text-xs text-slate-500">当前分类下暂无二级子菜单</p>
         </div>
       </div>
     </div>
@@ -106,463 +101,132 @@
 import { ref, reactive, onMounted } from 'vue';
 import {
   getMenus,
-  addMenu as apiAddMenu,
-  updateMenu as apiUpdateMenu,
-  deleteMenu as apiDeleteMenu,
-  reorderMenus as apiReorderMenus,
-  addSubMenu as apiAddSubMenu,
-  updateSubMenu as apiUpdateSubMenu,
-  deleteSubMenu as apiDeleteSubMenu,
-  reorderSubMenus as apiReorderSubMenus
+  addMenu,
+  updateMenu,
+  deleteMenu,
+  reorderMenus,
+  addSubMenu,
+  updateSubMenu,
+  deleteSubMenu,
+  reorderSubMenus
 } from '../../api';
 
 const menus = ref([]);
 const newMenuName = ref('');
-const subMenuDrafts = reactive({});
+const expanded = reactive({ 2: true });
+const newSubNames = reactive({});
 
-// 主菜单拖拽状态
-const dragMenuIndex = ref(null);
-const dragOverMenuIndex = ref(null);
-
-// 子菜单拖拽状态
-const dragSubInfo = reactive({
-  menuId: null,
-  index: null,
-  overIndex: null
-});
+const dragMenuIdx = ref(null);
+const dragOverMenuIdx = ref(null);
+const dragSubState = reactive({ parentId: null, subIdx: null });
 
 onMounted(loadMenus);
 
 async function loadMenus() {
-  const expandedMap = {};
-  menus.value.forEach(m => { expandedMap[m.id] = m.showSubMenu; });
-  const res = await getMenus();
-  menus.value = res.data.map(menu => ({
-    ...menu,
-    showSubMenu: expandedMap[menu.id] ?? false
-  }));
+  try {
+    const res = await getMenus();
+    menus.value = res.data || [];
+  } catch (e) {}
 }
 
-// 主菜单拖拽事件
-function onMenuDragStart(e, index) {
-  dragMenuIndex.value = index;
-  e.dataTransfer.effectAllowed = 'move';
+function toggleExpand(id) {
+  expanded[id] = !expanded[id];
 }
 
-function onMenuDragOver(e, index) {
-  if (dragMenuIndex.value === null) return;
-  dragOverMenuIndex.value = index;
-}
-
-async function onMenuDrop(e, targetIndex) {
-  if (dragMenuIndex.value === null || dragMenuIndex.value === targetIndex) {
-    onMenuDragEnd();
-    return;
-  }
-  const list = [...menus.value];
-  const [moved] = list.splice(dragMenuIndex.value, 1);
-  list.splice(targetIndex, 0, moved);
-  list.forEach((m, idx) => { m.order = idx + 1; });
-  menus.value = list;
-  onMenuDragEnd();
-  await persistMenuOrder();
-}
-
-function onMenuDragEnd() {
-  dragMenuIndex.value = null;
-  dragOverMenuIndex.value = null;
-}
-
-async function moveMenu(index, delta) {
-  const target = index + delta;
-  if (target < 0 || target >= menus.value.length) return;
-  const list = [...menus.value];
-  const [moved] = list.splice(index, 1);
-  list.splice(target, 0, moved);
-  list.forEach((m, idx) => { m.order = idx + 1; });
-  menus.value = list;
-  await persistMenuOrder();
-}
-
-async function persistMenuOrder() {
-  const items = menus.value.map((m, idx) => ({ id: m.id, order: idx + 1 }));
-  await apiReorderMenus(items);
-}
-
-// 子菜单拖拽事件
-function onSubDragStart(e, menuId, sIdx) {
-  dragSubInfo.menuId = menuId;
-  dragSubInfo.index = sIdx;
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-function onSubDragOver(e, menuId, sIdx) {
-  if (dragSubInfo.menuId !== menuId) return;
-  dragSubInfo.overIndex = sIdx;
-}
-
-async function onSubDrop(e, menu, targetIdx) {
-  if (dragSubInfo.menuId !== menu.id || dragSubInfo.index === null || dragSubInfo.index === targetIdx) {
-    onSubDragEnd();
-    return;
-  }
-  const subs = [...(menu.subMenus || [])];
-  const [moved] = subs.splice(dragSubInfo.index, 1);
-  subs.splice(targetIdx, 0, moved);
-  subs.forEach((s, idx) => { s.order = idx + 1; });
-  menu.subMenus = subs;
-  onSubDragEnd();
-  await persistSubMenuOrder(menu);
-}
-
-function onSubDragEnd() {
-  dragSubInfo.menuId = null;
-  dragSubInfo.index = null;
-  dragSubInfo.overIndex = null;
-}
-
-async function moveSubMenu(menu, sIdx, delta) {
-  const subs = [...(menu.subMenus || [])];
-  const target = sIdx + delta;
-  if (target < 0 || target >= subs.length) return;
-  const [moved] = subs.splice(sIdx, 1);
-  subs.splice(target, 0, moved);
-  subs.forEach((s, idx) => { s.order = idx + 1; });
-  menu.subMenus = subs;
-  await persistSubMenuOrder(menu);
-}
-
-async function persistSubMenuOrder(menu) {
-  const items = (menu.subMenus || []).map((s, idx) => ({ id: s.id, order: idx + 1 }));
-  await apiReorderSubMenus(items);
-}
-
-async function addMenu() {
-  if (!newMenuName.value.trim()) return;
-  const maxOrder = menus.value.length ? Math.max(...menus.value.map(m => m.order || 0)) : 0;
-  await apiAddMenu({ name: newMenuName.value.trim(), order: maxOrder + 1 });
+async function handleAddMenu() {
+  const name = newMenuName.value.trim();
+  if (!name) return;
+  await addMenu({ name, order: menus.value.length + 1 });
   newMenuName.value = '';
   await loadMenus();
 }
 
-async function updateMenu(menu) {
-  await apiUpdateMenu(menu.id, { name: menu.name, order: menu.order });
+async function saveMenu(menu) {
+  await updateMenu(menu.id, { name: menu.name, order: menu.order });
+}
+
+async function removeMenu(id) {
+  await deleteMenu(id);
   await loadMenus();
 }
 
-async function deleteMenu(id) {
-  await apiDeleteMenu(id);
+async function handleAddSub(menu) {
+  const val = (newSubNames[menu.id] || '').trim();
+  if (!val) return;
+  await addSubMenu(menu.id, { name: val, order: (menu.subMenus?.length || 0) + 1 });
+  newSubNames[menu.id] = '';
   await loadMenus();
 }
 
-async function addSubMenu(menuId) {
-  const draft = (subMenuDrafts[menuId] || '').trim();
-  if (!draft) return;
-  const menu = menus.value.find(m => m.id === menuId);
-  const maxOrder = menu?.subMenus?.length ? Math.max(...menu.subMenus.map(s => s.order || 0)) : 0;
-  await apiAddSubMenu(menuId, { name: draft, order: maxOrder + 1 });
-  subMenuDrafts[menuId] = '';
+async function saveSub(sub) {
+  await updateSubMenu(sub.id, { name: sub.name, order: sub.order });
+}
+
+async function removeSub(menu, subId) {
+  await deleteSubMenu(subId);
   await loadMenus();
 }
 
-async function updateSubMenu(subMenu) {
-  await apiUpdateSubMenu(subMenu.id, { name: subMenu.name, order: subMenu.order });
-  await loadMenus();
+function onMenuDragStart(e, idx) {
+  dragMenuIdx.value = idx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onMenuDragOver(e, idx) {
+  if (dragMenuIdx.value === null) return;
+  dragOverMenuIdx.value = idx;
+}
+async function onMenuDrop(e, targetIdx) {
+  if (dragMenuIdx.value === null || dragMenuIdx.value === targetIdx) {
+    onMenuDragEnd();
+    return;
+  }
+  const list = [...menus.value];
+  const [moved] = list.splice(dragMenuIdx.value, 1);
+  list.splice(targetIdx, 0, moved);
+  list.forEach((m, i) => { m.order = i + 1; });
+  menus.value = list;
+  onMenuDragEnd();
+  await reorderMenus(menus.value.map((m, i) => ({ id: m.id, order: i + 1 })));
+}
+function onMenuDragEnd() {
+  dragMenuIdx.value = null;
+  dragOverMenuIdx.value = null;
 }
 
-async function deleteSubMenu(id) {
-  await apiDeleteSubMenu(id);
-  await loadMenus();
+async function moveMenu(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= menus.value.length) return;
+  const list = [...menus.value];
+  const [moved] = list.splice(idx, 1);
+  list.splice(target, 0, moved);
+  list.forEach((m, i) => { m.order = i + 1; });
+  menus.value = list;
+  await reorderMenus(menus.value.map((m, i) => ({ id: m.id, order: i + 1 })));
 }
 
-function toggleSubMenu(menuId) {
-  const menu = menus.value.find(m => m.id === menuId);
-  if (menu) menu.showSubMenu = !menu.showSubMenu;
+function onSubDragStart(e, parentId, sIdx) {
+  dragSubState.parentId = parentId;
+  dragSubState.subIdx = sIdx;
+}
+async function onSubDrop(e, menu, targetIdx) {
+  if (dragSubState.parentId !== menu.id || dragSubState.subIdx === null || dragSubState.subIdx === targetIdx) return;
+  const subs = [...(menu.subMenus || [])];
+  const [moved] = subs.splice(dragSubState.subIdx, 1);
+  subs.splice(targetIdx, 0, moved);
+  subs.forEach((s, i) => { s.order = i + 1; });
+  menu.subMenus = subs;
+  dragSubState.parentId = null;
+  dragSubState.subIdx = null;
+  await reorderSubMenus(subs.map((s, i) => ({ id: s.id, order: i + 1 })));
+}
+async function moveSub(menu, sIdx, dir) {
+  const subs = [...(menu.subMenus || [])];
+  const target = sIdx + dir;
+  if (target < 0 || target >= subs.length) return;
+  const [moved] = subs.splice(sIdx, 1);
+  subs.splice(target, 0, moved);
+  subs.forEach((s, i) => { s.order = i + 1; });
+  menu.subMenus = subs;
+  await reorderSubMenus(subs.map((s, i) => ({ id: s.id, order: i + 1 })));
 }
 </script>
-
-<style scoped>
-.menu-manage {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.top-bar {
-  background: #fff;
-  padding: 1.5rem;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.section-heading {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.2rem;
-  color: #0f172a;
-}
-
-.section-sub {
-  margin: 0;
-  font-size: 0.86rem;
-  color: #64748b;
-}
-
-.menu-add {
-  display: flex;
-  gap: 0.65rem;
-}
-
-.input {
-  padding: 0.6rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  font-size: 0.9rem;
-  outline: none;
-  min-width: 220px;
-}
-
-.input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-}
-
-.input-sm {
-  padding: 0.45rem 0.75rem;
-  font-size: 0.85rem;
-}
-
-.menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-}
-
-.menu-card {
-  background: #fff;
-  border-radius: 14px;
-  border: 2px solid #e2e8f0;
-  overflow: hidden;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
-}
-
-.menu-card.is-dragging {
-  opacity: 0.45;
-  transform: scale(0.99);
-}
-
-.menu-card.is-drag-over {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-}
-
-.main-menu-row {
-  padding: 0.95rem 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.menu-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.drag-handle {
-  cursor: grab;
-  color: #94a3b8;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
-}
-
-.drag-handle:hover {
-  color: #4f46e5;
-  background: #eef2ff;
-}
-
-.drag-handle:active {
-  cursor: grabbing;
-}
-
-.menu-badge {
-  background: #eef2ff;
-  color: #4f46e5;
-  font-weight: 700;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.55rem;
-  border-radius: 6px;
-}
-
-.name-input {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #0f172a;
-  border: 1px solid transparent;
-  padding: 0.4rem 0.6rem;
-  border-radius: 8px;
-  background: transparent;
-}
-
-.name-input:hover, .name-input:focus {
-  border-color: #cbd5e1;
-  background: #f8fafc;
-  outline: none;
-}
-
-.menu-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.move-btns {
-  display: inline-flex;
-  gap: 0.25rem;
-}
-
-.btn-move {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-}
-
-.btn-move:hover:not(:disabled) {
-  border-color: #6366f1;
-  color: #4f46e5;
-  background: #eef2ff;
-}
-
-.btn-move:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1rem;
-  border-radius: 10px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s;
-}
-
-.btn-sm {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-}
-
-.btn-ghost {
-  background: #f1f5f9;
-  color: #334155;
-}
-
-.btn-ghost:hover {
-  background: #e2e8f0;
-}
-
-.btn-danger-outline {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.btn-danger-outline:hover {
-  background: #dc2626;
-  color: #fff;
-}
-
-.rotated {
-  transform: rotate(180deg);
-}
-
-.submenu-panel {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  padding: 1rem 1.25rem;
-}
-
-.submenu-add-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.85rem;
-}
-
-.submenu-items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.submenu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
-  background: #fff;
-  padding: 0.5rem 0.85rem;
-  border-radius: 10px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.15s ease;
-}
-
-.submenu-row.is-dragging {
-  opacity: 0.45;
-}
-
-.submenu-row.is-drag-over {
-  border-color: #6366f1;
-  background: #eef2ff;
-}
-
-.sub-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 0.15rem 0.45rem;
-  border-radius: 5px;
-}
-
-.sub-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-  flex: 1;
-}
-
-.empty-hint {
-  margin: 0;
-  font-size: 0.84rem;
-  color: #94a3b8;
-}
-</style>

@@ -1,296 +1,496 @@
 <template>
-  <div class="portal-root" :class="`theme-${theme}`">
-    <!-- Dynamic Custom Background Layer -->
-    <div class="custom-bg-layer" :style="customBgStyle" aria-hidden="true"></div>
-    <div class="custom-bg-overlay" :style="customOverlayStyle" aria-hidden="true"></div>
+  <div class="relative min-h-screen flex flex-col">
+    <!-- Dynamic Switchable Background Layer -->
+    <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-500" :style="customBgStyle" aria-hidden="true"></div>
+    <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-300" :style="customOverlayStyle" aria-hidden="true"></div>
 
-    <!-- Sticky Glass Header -->
-    <header class="glass-header">
-      <div class="header-inner">
-        <div class="brand-area" @click="resetToHome">
-          <div class="brand-logo">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <polygon points="3 11 22 2 13 21 11 13 3 11"/>
-            </svg>
+    <!-- Toast Notification -->
+    <div v-if="toastMsg" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold bg-indigo-600 text-white border-indigo-400">
+      {{ toastMsg }}
+    </div>
+
+    <!-- Portal Content -->
+    <div class="relative z-10 flex flex-col min-h-screen">
+      <!-- Top Glass Navbar -->
+      <header class="glass-nav sticky top-0 z-40 px-4 sm:px-6 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <!-- Brand -->
+          <button type="button" class="flex items-center gap-2.5 text-left group focus:outline-none" @click="resetToHome">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+              </svg>
+            </div>
+            <div>
+              <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 bg-clip-text text-transparent">Nav-Item</span>
+              <span class="hidden sm:inline-block ml-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">Modern v2.0</span>
+            </div>
+          </button>
+
+          <!-- Main Category Navigation Bar (Supports Red Cross Delete in Edit Mode) -->
+          <nav class="order-3 lg:order-2 w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto py-2 px-2 rounded-2xl bg-slate-500/10 border border-slate-500/15" aria-label="主分类导航">
+            <div v-for="menu in menus" :key="menu.id" class="relative inline-flex shrink-0">
+              <button
+                type="button"
+                class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap"
+                :class="[
+                  activeMenu && activeMenu.id === menu.id
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md shadow-indigo-500/30'
+                    : 'hover:bg-slate-500/15 opacity-80 hover:opacity-100',
+                  isEditMode ? 'edit-mode-item' : ''
+                ]"
+                @click="selectMenu(menu)"
+              >
+                {{ menu.name }}
+                <span v-if="menu.subMenus && menu.subMenus.length > 0" class="ml-1 text-[10px] opacity-75">▾</span>
+              </button>
+              <span
+                v-if="isEditMode"
+                class="quick-del-badge"
+                :title="`删除菜单「${menu.name}」`"
+                @click.stop="handleQuickDeleteMenu(menu)"
+              >✕</span>
+            </div>
+          </nav>
+
+          <!-- Right Quick Actions -->
+          <div class="order-2 lg:order-3 flex items-center gap-2">
+            <!-- Quick Edit Toggle Button -->
+            <button
+              type="button"
+              :class="isEditMode
+                ? 'px-3 h-9 rounded-xl border border-rose-500 bg-rose-500 text-white flex items-center justify-center gap-1.5 text-xs font-bold shadow-md shadow-rose-500/25 transition'
+                : 'px-3 h-9 rounded-xl border border-slate-500/20 bg-slate-500/10 hover:bg-rose-500/15 hover:border-rose-500/40 hover:text-rose-500 flex items-center justify-center gap-1.5 text-xs font-semibold transition'"
+              title="开启/关闭快捷编辑模式（点击右上角红叉即可删除菜单或卡片）"
+              @click="toggleEditMode"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              <span>{{ isEditMode ? '完成' : '编辑' }}</span>
+            </button>
+
+            <!-- View Mode Toggle -->
+            <button
+              type="button"
+              class="w-9 h-9 rounded-xl border border-slate-500/20 bg-slate-500/10 hover:bg-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-center transition"
+              title="切换卡片详情/紧凑视图"
+              @click="toggleViewMode"
+            >
+              <svg v-if="viewMode === 'detailed'" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+              </svg>
+              <svg v-else width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/>
+              </svg>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button
+              type="button"
+              class="px-3 h-9 rounded-xl border border-slate-500/20 bg-slate-500/10 hover:bg-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-center gap-1.5 text-xs font-semibold transition"
+              :title="themeButtonTitle"
+              @click="handleToggleTheme"
+            >
+              <svg v-if="themeMode === 'light'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+              <svg v-else-if="themeMode === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span>{{ themeModeLabel }}</span>
+            </button>
+
+            <!-- Admin Entry -->
+            <button
+              type="button"
+              class="px-3.5 h-9 rounded-xl border border-indigo-500/30 bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 text-xs font-semibold flex items-center gap-1.5 transition"
+              title="进入后台管理系统"
+              @click="goAdmin()"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+              <span>后台管理</span>
+            </button>
           </div>
-          <span class="brand-title">Nav-Item</span>
         </div>
+      </header>
 
-        <!-- Horizontal Main Category Bar -->
-        <nav class="main-menu-bar" aria-label="主分类导航">
-          <button
-            v-for="menu in menus"
-            :key="menu.id"
-            class="menu-tab-btn"
-            :class="{ active: activeMenu && activeMenu.id === menu.id }"
-            @click="selectMenu(menu)"
-          >
-            <span class="menu-tab-text">{{ menu.name }}</span>
-          </button>
-        </nav>
+      <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
+      <section class="px-4 pt-8 pb-5 flex flex-col items-center">
+        <div class="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-5 select-none">
+          <div class="text-center sm:text-left">
+            <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
+            <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
+          </div>
 
-        <!-- Right Quick Controls -->
-        <div class="header-actions">
-          <button class="icon-action-btn" @click="toggleViewMode" :title="viewMode === 'detailed' ? '切换为紧凑图标视图' : '切换为详情卡片视图'">
-            <svg v-if="viewMode === 'detailed'" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
-            </svg>
-            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/>
-            </svg>
-          </button>
-
-          <button class="theme-cycle-btn" @click="toggleTheme" :title="themeButtonTitle">
-            <svg v-if="themeMode === 'light'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="5"/>
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-            <svg v-else-if="themeMode === 'dark'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-            <span class="theme-mode-label">{{ themeModeLabel }}</span>
-          </button>
-
-          <a href="/admin" target="_blank" class="admin-entry-btn" title="进入后台管理">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-            <span class="admin-label">管理</span>
-          </a>
-        </div>
-      </div>
-    </header>
-
-    <!-- Hero Clock, Weather Reminder & Multi-Engine Search -->
-    <section class="hero-section">
-      <div class="hero-top-row">
-        <div class="clock-widget">
-          <div class="time-display">{{ currentTime }}</div>
-          <div class="date-greeting">{{ currentDate }} · {{ greetingText }}</div>
-        </div>
-
-        <!-- Interactive Weather Reminder Card -->
-        <div class="weather-widget-card" @click="showWeatherPicker = !showWeatherPicker" title="点击切换城市或重新定位">
-          <div class="weather-main-info">
-            <span class="weather-emoji">{{ weatherData.icon }}</span>
-            <div class="weather-temp-col">
-              <div class="weather-city-line">
-                <span class="weather-city-name">{{ weatherCity.name }}</span>
-                <span v-if="weatherCity.isAuto" class="weather-auto-tag">定位</span>
-                <span class="weather-temp-val">{{ weatherData.temp }}°C</span>
-                <span class="weather-desc-badge">{{ weatherData.desc }}</span>
-              </div>
-              <div class="weather-reminder-line">
-                <span>💡 {{ weatherData.reminder }}</span>
+          <!-- Weather Reminder Card -->
+          <div class="relative">
+            <div
+              class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer"
+              title="点击切换城市或使用自动定位"
+              @click.stop="showWeatherPicker = !showWeatherPicker"
+            >
+              <span class="text-2xl sm:text-3xl select-none">{{ weatherData.icon }}</span>
+              <div class="text-left">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs sm:text-sm font-bold">{{ weatherCity.name }}</span>
+                  <span v-if="weatherCity.isAuto" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">定位</span>
+                  <span class="text-xs sm:text-sm font-extrabold text-indigo-400">{{ weatherData.temp }}°C</span>
+                  <span class="text-xs text-slate-400">{{ weatherData.desc }}</span>
+                  <span class="text-[10px] text-slate-400 ml-0.5">▾</span>
+                </div>
+                <div class="text-[11px] text-slate-400 mt-0.5 max-w-[230px] sm:max-w-[260px] truncate">
+                  💡 {{ weatherData.reminder }}
+                </div>
               </div>
             </div>
-          </div>
-          <button type="button" class="weather-switch-btn" @click.stop="showWeatherPicker = !showWeatherPicker">
-            切换位置 ▾
-          </button>
-        </div>
-      </div>
 
-      <!-- Location Selector Popover -->
-      <div v-if="showWeatherPicker" class="weather-picker-panel">
-        <div class="weather-picker-header">
-          <span class="picker-title">📍 选择天气城市或自动定位</span>
-          <div class="picker-actions">
-            <button type="button" class="geo-locate-btn" @click="locateUserWeather" :disabled="locatingWeather">
-              {{ locatingWeather ? '定位中...' : '📍 自动定位当前位置' }}
-            </button>
-            <button type="button" class="picker-close-btn" @click="showWeatherPicker = false">✕</button>
+            <!-- Weather City Picker Popover -->
+            <div
+              v-if="showWeatherPicker"
+              id="weatherPickerPopover"
+              class="absolute right-0 left-0 sm:left-auto mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+              @click.stop
+            >
+              <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+                <span class="text-xs font-bold text-slate-200">📍 天气位置与提醒设置</span>
+                <div class="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold transition"
+                    @click="locateUserWeather"
+                  >
+                    {{ locatingWeather ? '定位中...' : '📍 自动定位' }}
+                  </button>
+                  <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showWeatherPicker = false">✕</button>
+                </div>
+              </div>
+
+              <div class="text-[11px] text-slate-400 mb-2">热门城市快速选择：</div>
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                <button
+                  v-for="city in presetCities"
+                  :key="city.name"
+                  type="button"
+                  class="px-2.5 py-1 rounded-lg border text-xs transition"
+                  :class="weatherCity.name === city.name
+                    ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
+                    : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'"
+                  @click="selectPresetCity(city)"
+                >
+                  {{ city.name }}
+                </button>
+              </div>
+
+              <form class="flex gap-1.5 pt-2 border-t border-slate-800" @submit.prevent="searchCustomCity">
+                <input
+                  v-model="customCityQuery"
+                  type="text"
+                  placeholder="输入城市名称（如：杭州、成都、Tokyo）..."
+                  class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                />
+                <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shrink-0">切换</button>
+              </form>
+            </div>
           </div>
         </div>
-        <div class="city-presets-grid">
-          <button
-            v-for="city in presetCities"
-            :key="city.name"
-            type="button"
-            class="city-pill-btn"
-            :class="{ active: weatherCity.name === city.name }"
-            @click="selectPresetCity(city)"
-          >
-            {{ city.name }}
-          </button>
-        </div>
-        <form class="custom-city-form" @submit.prevent="searchCustomCity">
-          <input v-model="customCityQuery" type="text" placeholder="输入自定义城市名称（如：杭州、成都、Tokyo）..." class="custom-city-input" />
-          <button type="submit" class="custom-city-submit">查询并切换</button>
-        </form>
-      </div>
 
-      <!-- Search Container -->
-      <div class="search-widget">
-        <div class="engine-selector">
+        <!-- Search Engine Tabs -->
+        <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
           <button
             v-for="eng in searchEngines"
             :key="eng.id || eng.name"
-            class="engine-pill"
-            :class="{ active: selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name) }"
+            type="button"
+            class="px-3 py-1 rounded-full text-xs transition"
+            :class="selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name)
+              ? (theme === 'light' ? 'bg-indigo-600 text-white border border-indigo-600 font-semibold shadow-sm' : 'bg-indigo-500/25 text-indigo-400 border border-indigo-500/40 font-semibold')
+              : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 border border-transparent')"
             @click="selectEngine(eng)"
           >
             {{ eng.label }}
           </button>
-          <a href="/admin" target="_blank" class="engine-config-link" title="在后台自定义配置搜索引擎与地址">
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded-full text-[11px] border border-dashed transition"
+            :class="theme === 'light'
+              ? 'text-slate-500 hover:text-indigo-600 border-slate-300 hover:border-indigo-400'
+              : 'text-slate-400 hover:text-indigo-400 border-slate-700 hover:border-indigo-500/50'"
+            title="自定义配置搜索引擎与地址"
+            @click="goAdmin('engine')"
+          >
             ⚙ 自定义引擎
-          </a>
+          </button>
         </div>
 
-        <div class="search-box-wrapper">
-          <span class="search-prefix-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-            </svg>
-          </span>
+        <!-- Search Bar -->
+        <div class="w-full max-w-2xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
+          <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
           <input
             ref="searchInputRef"
             v-model="searchQuery"
             type="text"
-            class="search-input"
             :placeholder="selectedEngine ? selectedEngine.placeholder : '输入关键词搜索...'"
+            class="w-full bg-transparent border-none outline-none text-sm sm:text-base py-2 placeholder-slate-500"
             @keyup.enter="handleSearch"
           />
-          <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''" title="清空">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-500/20 transition"
+            title="清空搜索"
+            @click="searchQuery = ''"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
           </button>
-          <kbd v-else class="shortcut-kbd" title="按 / 键快速聚焦搜索框">/</kbd>
-          <button class="search-submit-btn" @click="handleSearch">
+          <kbd v-else class="hidden sm:inline-block px-2 py-0.5 text-xs font-mono rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/20 select-none" title="按 / 键快速聚焦搜索">/</kbd>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition shrink-0"
+            @click="handleSearch"
+          >
             搜索
           </button>
         </div>
-      </div>
 
-      <!-- Sub-category Capsule Pills -->
-      <div v-if="activeMenu && activeMenu.subMenus && activeMenu.subMenus.length > 0 && !isGlobalFiltering" class="sub-menu-pills">
-        <button
-          class="sub-pill"
-          :class="{ active: activeSubMenu === null }"
-          @click="selectSubMenu(null)"
+        <!-- Sub-menu Capsule Filter Bar (Supports Red Cross Delete in Edit Mode) -->
+        <div
+          v-if="activeMenu && activeMenu.subMenus && activeMenu.subMenus.length > 0 && !isGlobalFiltering"
+          class="mt-4 flex flex-wrap items-center justify-center gap-2"
         >
-          全部 {{ activeMenu.name }}
-        </button>
-        <button
-          v-for="sub in activeMenu.subMenus"
-          :key="sub.id"
-          class="sub-pill"
-          :class="{ active: activeSubMenu && activeSubMenu.id === sub.id }"
-          @click="selectSubMenu(sub)"
-        >
-          {{ sub.name }}
-        </button>
-      </div>
-
-      <!-- Global Search Status Banner -->
-      <div v-if="isGlobalFiltering" class="search-status-banner">
-        <span>全站检索 “<strong>{{ searchQuery }}</strong>” 共找到 {{ filteredCards.length }} 个结果</span>
-        <button class="reset-search-link" @click="searchQuery = ''">返回栏目浏览</button>
-      </div>
-    </section>
-
-    <!-- Main Cards Grid -->
-    <main class="cards-main-container">
-      <div v-if="filteredCards.length === 0" class="empty-state-box">
-        <div class="empty-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-          </svg>
+          <button
+            type="button"
+            class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition"
+            :class="activeSubMenu === null
+              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+              : 'bg-slate-500/10 border-slate-500/20 text-slate-400 hover:border-indigo-500/40'"
+            @click="selectSubMenu(null)"
+          >
+            全部 {{ activeMenu.name }}
+          </button>
+          <div v-for="sub in activeMenu.subMenus" :key="sub.id" class="relative inline-flex">
+            <button
+              type="button"
+              class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition"
+              :class="[
+                activeSubMenu && activeSubMenu.id === sub.id
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                  : 'bg-slate-500/10 border-slate-500/20 text-slate-400 hover:border-indigo-500/40',
+                isEditMode ? 'edit-mode-item' : ''
+              ]"
+              @click="selectSubMenu(sub)"
+            >
+              {{ sub.name }}
+            </button>
+            <span
+              v-if="isEditMode"
+              class="quick-del-badge"
+              :title="`删除子菜单「${sub.name}」`"
+              @click.stop="handleQuickDeleteSubMenu(sub)"
+            >✕</span>
+          </div>
         </div>
-        <h3>未找到匹配的导航卡片</h3>
-        <p>您可以尝试更换搜索关键词，或在后台管理中添加新的常用网站。</p>
-      </div>
 
-      <div v-else class="cards-grid" :class="`mode-${viewMode}`">
-        <a
-          v-for="(card, idx) in filteredCards"
-          :key="card.id"
-          :href="card.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="nav-card-item"
-          :style="{ animationDelay: `${Math.min(idx * 0.025, 0.4)}s` }"
+        <!-- Global Search Status Banner -->
+        <div v-if="isGlobalFiltering" class="mt-4 px-4 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-xs sm:text-sm flex items-center gap-3">
+          <span>全站检索 “<strong>{{ searchQuery }}</strong>” 共找到 <strong>{{ filteredCards.length }}</strong> 个书签</span>
+          <button type="button" class="text-indigo-400 font-semibold hover:underline" @click="searchQuery = ''">返回栏目浏览</button>
+        </div>
+      </section>
+
+      <!-- Cards Grid Section -->
+      <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 pb-12 pt-2">
+        <div v-if="filteredCards.length === 0" class="max-w-md mx-auto my-12 p-8 rounded-2xl glass-card text-center">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <h3 class="text-base font-bold mb-1">未找到匹配的导航卡片</h3>
+          <p class="text-xs text-slate-400">试试更换搜索关键词，或者切换到其他分类栏目查看</p>
+        </div>
+
+        <div
+          v-else
+          :class="viewMode === 'compact'
+            ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3'
+            : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'"
         >
-          <div class="card-icon-wrap">
-            <img
-              v-if="getLogo(card) && !logoErrors[card.id]"
-              :src="getLogo(card)"
-              :alt="card.title"
-              class="card-favicon"
-              loading="lazy"
-              @error="onLogoError(card.id)"
-            />
-            <span v-else class="card-fallback-avatar">{{ getFirstChar(card.title) }}</span>
-          </div>
+          <a
+            v-for="(card, idx) in filteredCards"
+            :key="card.id"
+            :href="card.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            :style="{ animationDelay: `${Math.min(idx * 0.02, 0.35)}s` }"
+            :class="[
+              'relative glass-card card-anim rounded-2xl p-4 group',
+              viewMode === 'compact' ? 'flex flex-col items-center justify-center text-center gap-2.5' : 'flex items-center gap-3.5',
+              isEditMode ? 'edit-mode-item' : ''
+            ]"
+          >
+            <!-- Top-right Red Cross Delete Button in Edit Mode -->
+            <button
+              v-if="isEditMode"
+              type="button"
+              class="quick-del-badge"
+              :title="`删除「${card.title}」`"
+              @click.prevent.stop="handleQuickDeleteCard(card)"
+            >✕</button>
 
-          <div class="card-info">
-            <div class="card-title-row">
-              <span class="card-title">{{ card.title }}</span>
-              <svg class="external-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M7 17L17 7M7 7h10v10"/>
-              </svg>
+            <div
+              :class="viewMode === 'compact'
+                ? 'w-10 h-10 rounded-xl bg-indigo-500/15 border border-slate-500/15 flex items-center justify-center overflow-hidden shrink-0'
+                : 'w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-slate-500/15 flex items-center justify-center overflow-hidden shrink-0'"
+            >
+              <img
+                v-if="getLogo(card) && !logoErrors[card.id]"
+                :src="getLogo(card)"
+                alt=""
+                class="w-6 h-6 object-contain group-hover:scale-110 transition"
+                loading="lazy"
+                @error="onLogoError(card.id)"
+              />
+              <span v-else class="text-sm font-bold text-indigo-400">{{ getFirstChar(card.title) }}</span>
             </div>
-            <p v-if="viewMode === 'detailed'" class="card-desc">{{ card.desc || getHostname(card.url) }}</p>
-          </div>
-        </a>
-      </div>
-    </main>
 
-    <!-- Minimalist Personal Footer -->
-    <footer class="minimal-footer">
-      <p>Copyright © {{ new Date().getFullYear() }} Nav-Item · 现代化个人导航工作台</p>
-    </footer>
+            <span v-if="viewMode === 'compact'" class="text-xs font-semibold truncate w-full">{{ card.title }}</span>
+
+            <div v-else class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-sm font-semibold truncate">{{ card.title }}</span>
+                <svg class="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:text-indigo-400 transition shrink-0" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg>
+              </div>
+              <p class="text-xs text-slate-400 truncate mt-0.5">{{ card.desc || getHostname(card.url) }}</p>
+            </div>
+          </a>
+        </div>
+      </main>
+
+      <!-- Clean Minimal Footer -->
+      <footer class="py-5 px-4 text-center border-t border-slate-500/10 text-xs text-slate-500">
+        <p>Copyright © {{ new Date().getFullYear() }} Nav-Item · 现代化个人导航工作台</p>
+      </footer>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { getMenus, getCards, getActiveBackground, getSearchEngines } from '../api';
+import { useRouter } from 'vue-router';
+import {
+  getMenus,
+  getCards,
+  getAllCards,
+  deleteMenu,
+  deleteSubMenu,
+  deleteCard,
+  getActiveBackground,
+  getSearchEngines
+} from '../api';
+import {
+  DEFAULT_BACKGROUNDS,
+  DEFAULT_SEARCH_ENGINES,
+  PRESET_WEATHER_CITIES,
+  themeMode,
+  effectiveTheme,
+  syncBodyThemeClass,
+  cycleTheme
+} from '../defaultData';
 
-const DEFAULT_ENGINES = [
-  { id: 1, name: 'site', label: '站内搜索', placeholder: '输入关键词实时过滤全站书签 (支持标题/描述/域名)...', url_template: 'site://internal', is_default: 1 },
-  { id: 2, name: 'google', label: 'Google', placeholder: '使用 Google 搜索全球资讯...', url_template: 'https://www.google.com/search?q={q}', is_default: 0 },
-  { id: 3, name: 'bing', label: 'Bing', placeholder: '使用 Microsoft Bing 搜索...', url_template: 'https://www.bing.com/search?q={q}', is_default: 0 },
-  { id: 4, name: 'baidu', label: '百度', placeholder: '使用百度搜索中文网页...', url_template: 'https://www.baidu.com/s?wd={q}', is_default: 0 },
-  { id: 5, name: 'github', label: 'GitHub', placeholder: '在 GitHub 中搜索开源项目...', url_template: 'https://github.com/search?q={q}&type=repositories', is_default: 0 },
-  { id: 6, name: 'searxng', label: 'SearXNG', placeholder: '使用隐私元搜索引擎检索...', url_template: 'https://searxng.553423.xyz/search?q={q}', is_default: 0 }
-];
-
-const PRESET_CITIES = [
-  { name: '香港', lat: 22.3193, lon: 114.1694, temp: 26, code: 1 },
-  { name: '北京', lat: 39.9042, lon: 116.4074, temp: 18, code: 0 },
-  { name: '上海', lat: 31.2304, lon: 121.4737, temp: 22, code: 2 },
-  { name: '深圳', lat: 22.5431, lon: 114.0579, temp: 27, code: 1 },
-  { name: '广州', lat: 23.1291, lon: 113.2644, temp: 28, code: 2 },
-  { name: '杭州', lat: 30.2741, lon: 120.1551, temp: 21, code: 3 },
-  { name: '成都', lat: 30.5728, lon: 104.0668, temp: 20, code: 61 },
-  { name: '武汉', lat: 30.5928, lon: 114.3055, temp: 23, code: 0 },
-  { name: '南京', lat: 32.0603, lon: 118.7969, temp: 21, code: 1 },
-  { name: '台北', lat: 25.0330, lon: 121.5654, temp: 25, code: 2 },
-  { name: '东京', lat: 35.6762, lon: 139.6503, temp: 19, code: 1 },
-  { name: '新加坡', lat: 1.3521, lon: 103.8198, temp: 30, code: 80 }
-];
+const router = useRouter();
 
 const menus = ref([]);
 const allCards = ref([]);
 const activeMenu = ref(null);
 const activeSubMenu = ref(null);
-const activeBg = ref(null);
+const activeBg = ref(DEFAULT_BACKGROUNDS[0]);
 
-const searchEngines = ref([...DEFAULT_ENGINES]);
-const selectedEngine = ref(DEFAULT_ENGINES[0]);
+const searchEngines = ref([...DEFAULT_SEARCH_ENGINES]);
+const selectedEngine = ref(DEFAULT_SEARCH_ENGINES[0]);
 const searchQuery = ref('');
 const searchInputRef = ref(null);
 const logoErrors = ref({});
+const isEditMode = ref(false);
+const toastMsg = ref('');
 
-// Weather State
-const presetCities = ref(PRESET_CITIES);
+function showToast(msg) {
+  toastMsg.value = msg;
+  setTimeout(() => {
+    if (toastMsg.value === msg) toastMsg.value = '';
+  }, 2400);
+}
+
+// Theme state
+const theme = effectiveTheme;
+const themeModeLabel = computed(() => {
+  if (themeMode.value === 'light') return '浅色';
+  if (themeMode.value === 'dark') return '深色';
+  return `自动(${theme.value === 'dark' ? '深' : '浅'})`;
+});
+const themeButtonTitle = computed(() => {
+  if (themeMode.value === 'light') return '当前：浅色主题（点击切换为深色主题）';
+  if (themeMode.value === 'dark') return '当前：深色主题（点击切换为跟随系统自动主题）';
+  return `当前：跟随系统自动切换（当前生效：${theme.value === 'dark' ? '深色' : '浅色'}）`;
+});
+
+function handleToggleTheme() {
+  const next = cycleTheme();
+  const names = {
+    light: '已切换为：浅色主题（前台与后台已同步）',
+    dark: '已切换为：深色主题（前台与后台已同步）',
+    system: `已切换为：跟随系统自动主题（当前生效：${theme.value === 'dark' ? '深色' : '浅色'}）`
+  };
+  showToast(names[next]);
+}
+
+function toggleEditMode() {
+  isEditMode.value = !isEditMode.value;
+  showToast(isEditMode.value ? '已进入快捷编辑模式：点击任意菜单或卡片右上角红叉 ✕ 即可删除' : '已退出快捷编辑模式');
+}
+
+async function handleQuickDeleteMenu(menu) {
+  if (menus.value.length <= 1) {
+    showToast('至少需要保留一个主菜单分类');
+    return;
+  }
+  try {
+    await deleteMenu(menu.id);
+  } catch (e) {}
+  menus.value = menus.value.filter(m => m.id !== menu.id);
+  allCards.value = allCards.value.filter(c => c.menu_id !== menu.id);
+  if (activeMenu.value && activeMenu.value.id === menu.id) {
+    activeMenu.value = menus.value[0] || null;
+    activeSubMenu.value = null;
+  }
+  showToast(`已删除菜单「${menu.name}」`);
+}
+
+async function handleQuickDeleteSubMenu(sub) {
+  try {
+    await deleteSubMenu(sub.id);
+  } catch (e) {}
+  if (activeMenu.value && activeMenu.value.subMenus) {
+    activeMenu.value.subMenus = activeMenu.value.subMenus.filter(s => s.id !== sub.id);
+  }
+  allCards.value = allCards.value.filter(c => c.sub_menu_id !== sub.id);
+  if (activeSubMenu.value && activeSubMenu.value.id === sub.id) {
+    activeSubMenu.value = null;
+  }
+  showToast(`已删除子菜单「${sub.name}」`);
+}
+
+async function handleQuickDeleteCard(card) {
+  try {
+    await deleteCard(card.id);
+  } catch (e) {}
+  allCards.value = allCards.value.filter(c => c.id !== card.id);
+  showToast(`已删除「${card.title}」`);
+}
+
+// Weather state
+const presetCities = ref(PRESET_WEATHER_CITIES);
 const showWeatherPicker = ref(false);
 const locatingWeather = ref(false);
 const customCityQuery = ref('');
@@ -299,7 +499,7 @@ const weatherData = ref({
   temp: 26,
   desc: '晴间多云',
   icon: '⛅',
-  reminder: '今日体感舒适，适合高效推进工作'
+  reminder: '今日体感舒适，适合专注高效办公 ✨'
 });
 
 function parseWeatherCode(code, temp) {
@@ -309,27 +509,22 @@ function parseWeatherCode(code, temp) {
   else if (code === 1 || code === 2) { desc = '晴间多云'; icon = '⛅'; }
   else if (code === 3) { desc = '阴天'; icon = '☁️'; }
   else if (code >= 45 && code <= 48) { desc = '有雾'; icon = '🌫️'; }
-  else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) { desc = '有雨'; icon = '🌧️'; }
+  else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) { desc = '小到中雨'; icon = '🌧️'; }
   else if (code >= 71 && code <= 77) { desc = '降雪'; icon = '❄️'; }
   else if (code >= 95) { desc = '雷阵雨'; icon = '⛈️'; }
 
-  let reminder = '今日天气温和宜人，保持好心情';
-  if (icon === '🌧️' || icon === '⛈️') {
-    reminder = '今日有降水，出门请记得随身携带雨具 ☂️';
-  } else if (icon === '❄️') {
-    reminder = '气温较低且有降雪，注意防寒保暖与路面湿滑 🧣';
-  } else if (temp >= 30) {
-    reminder = '今日气温偏高，注意防晒降温与及时补充水分 🥤';
-  } else if (temp <= 12) {
-    reminder = '早晚温差较大天气微凉，外出建议添衣保暖 🧥';
-  } else {
-    reminder = '今日体感舒适，适合专注高效办公与学习 ✨';
-  }
+  let reminder = '今日体感舒适，适合专注高效办公 ✨';
+  if (icon === '🌧️' || icon === '⛈️') reminder = '今日有降雨，出门请记得携带雨伞 ☂️';
+  else if (icon === '❄️') reminder = '气温较低且有降雪，注意防寒保暖 🧣';
+  else if (temp >= 30) reminder = '今日气温较高，注意防暑降温与补水 🥤';
+  else if (temp <= 12) reminder = '天气微凉早晚温差大，外出建议添衣保暖 🧥';
   return { temp: Math.round(temp), desc, icon, reminder };
 }
 
 async function fetchWeatherByCoords(lat, lon, cityName, isAuto = false) {
   weatherCity.value = { name: cityName, lat, lon, isAuto };
+  const found = PRESET_WEATHER_CITIES.find(c => c.name === cityName) || PRESET_WEATHER_CITIES[0];
+  weatherData.value = parseWeatherCode(found.code, found.temp);
   try {
     localStorage.setItem('nav_weather_city', JSON.stringify(weatherCity.value));
   } catch (e) {}
@@ -340,24 +535,21 @@ async function fetchWeatherByCoords(lat, lon, cityName, isAuto = false) {
       const data = await res.json();
       if (data && data.current_weather) {
         weatherData.value = parseWeatherCode(data.current_weather.weathercode, data.current_weather.temperature);
-        return;
       }
     }
   } catch (e) {}
-  // Fallback if offline
-  const found = PRESET_CITIES.find(c => c.name === cityName) || PRESET_CITIES[0];
-  weatherData.value = parseWeatherCode(found.code, found.temp);
 }
 
 function selectPresetCity(city) {
   showWeatherPicker.value = false;
   fetchWeatherByCoords(city.lat, city.lon, city.name, false);
+  showToast(`已切换天气位置为：${city.name}`);
 }
 
 async function searchCustomCity() {
   const q = customCityQuery.value.trim();
   if (!q) return;
-  const localMatch = PRESET_CITIES.find(c => c.name.includes(q) || q.includes(c.name));
+  const localMatch = PRESET_WEATHER_CITIES.find(c => c.name.includes(q) || q.includes(c.name));
   if (localMatch) {
     customCityQuery.value = '';
     selectPresetCity(localMatch);
@@ -372,20 +564,22 @@ async function searchCustomCity() {
         customCityQuery.value = '';
         showWeatherPicker.value = false;
         await fetchWeatherByCoords(item.latitude, item.longitude, item.name, false);
+        showToast(`已切换天气位置为：${item.name}`);
         return;
       }
     }
   } catch (e) {}
-  weatherCity.value = { name: q, lat: 31.23, lon: 121.47, isAuto: false };
-  weatherData.value = parseWeatherCode(1, 23);
   customCityQuery.value = '';
   showWeatherPicker.value = false;
+  fetchWeatherByCoords(31.2304, 121.4737, q, false);
+  showToast(`已切换天气位置为：${q}`);
 }
 
 function locateUserWeather() {
   if (!navigator.geolocation) {
     fetchWeatherByCoords(22.3193, 114.1694, '香港', true);
     showWeatherPicker.value = false;
+    showToast('已定位至当前默认位置：香港');
     return;
   }
   locatingWeather.value = true;
@@ -394,44 +588,16 @@ function locateUserWeather() {
       locatingWeather.value = false;
       showWeatherPicker.value = false;
       await fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude, '当前位置', true);
+      showToast('已成功获取当前位置天气提醒');
     },
     () => {
       locatingWeather.value = false;
       showWeatherPicker.value = false;
       fetchWeatherByCoords(22.3193, 114.1694, '香港', true);
+      showToast('已自动定位至当前默认位置：香港');
     },
-    { timeout: 5000 }
+    { timeout: 4500 }
   );
-}
-
-// Theme Mode: 'light' (default) | 'dark' | 'system'
-const savedThemeMode = localStorage.getItem('nav_theme_mode');
-const themeMode = ref(['light', 'dark', 'system'].includes(savedThemeMode) ? savedThemeMode : 'light');
-const systemPrefersDark = ref(
-  typeof window !== 'undefined' && window.matchMedia
-    ? window.matchMedia('(prefers-color-scheme: dark)').matches
-    : false
-);
-const theme = computed(() => {
-  if (themeMode.value === 'system') {
-    return systemPrefersDark.value ? 'dark' : 'light';
-  }
-  return themeMode.value;
-});
-const themeModeLabel = computed(() => {
-  if (themeMode.value === 'light') return '浅色';
-  if (themeMode.value === 'dark') return '深色';
-  return `自动(${theme.value === 'dark' ? '深' : '浅'})`;
-});
-const themeButtonTitle = computed(() => {
-  if (themeMode.value === 'light') return '当前：浅色主题（点击切换为深色主题）';
-  if (themeMode.value === 'dark') return '当前：深色主题（点击切换为跟随系统自动主题）';
-  return `当前：跟随系统自动切换（当前生效：${theme.value === 'dark' ? '深色' : '浅色'}）`;
-});
-
-let colorSchemeQuery = null;
-function handleSystemThemeChange(e) {
-  systemPrefersDark.value = e.matches;
 }
 
 const viewMode = ref(localStorage.getItem('nav_view_mode') || 'detailed');
@@ -488,25 +654,17 @@ const customOverlayStyle = computed(() => {
   const op = (activeBg.value.overlay_opacity ?? 20) / 100;
   return {
     background: theme.value === 'light'
-      ? `rgba(255, 255, 255, ${Math.min(op, 0.45)})`
+      ? `rgba(248, 250, 252, ${Math.max(op, 0.55)})`
       : `rgba(11, 17, 32, ${op})`
   };
 });
 
 onMounted(async () => {
+  syncBodyThemeClass();
   updateClock();
-  clockTimer = setInterval(updateClock, 10000);
+  clockTimer = setInterval(updateClock, 15000);
   window.addEventListener('keydown', handleGlobalKeydown);
 
-  if (window.matchMedia) {
-    colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    systemPrefersDark.value = colorSchemeQuery.matches;
-    if (colorSchemeQuery.addEventListener) {
-      colorSchemeQuery.addEventListener('change', handleSystemThemeChange);
-    }
-  }
-
-  // Load saved weather city or locate
   try {
     const savedCity = localStorage.getItem('nav_weather_city');
     if (savedCity) {
@@ -528,35 +686,39 @@ onMounted(async () => {
     const engRes = await getSearchEngines();
     if (Array.isArray(engRes.data) && engRes.data.length) {
       searchEngines.value = engRes.data;
-      const def = searchEngines.value.find(e => e.is_default === 1) || searchEngines.value[0];
-      selectedEngine.value = def;
+      selectedEngine.value = searchEngines.value.find(e => e.is_default === 1) || searchEngines.value[0];
     }
   } catch (e) {}
 
-  const res = await getMenus();
-  menus.value = res.data || [];
-  if (menus.value.length > 0) {
-    activeMenu.value = menus.value[0];
-  }
+  try {
+    const res = await getMenus();
+    menus.value = res.data || [];
+    if (menus.value.length > 0) activeMenu.value = menus.value[0];
+  } catch (e) {}
+
   await loadAllCards();
 });
 
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer);
   window.removeEventListener('keydown', handleGlobalKeydown);
-  if (colorSchemeQuery && colorSchemeQuery.removeEventListener) {
-    colorSchemeQuery.removeEventListener('change', handleSystemThemeChange);
-  }
 });
 
 function handleGlobalKeydown(e) {
-  if (e.key === '/' && document.activeElement !== searchInputRef.value && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+  if (e.key === '/' && document.activeElement !== searchInputRef.value && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
     e.preventDefault();
     searchInputRef.value?.focus();
   }
 }
 
 async function loadAllCards() {
+  try {
+    const r = await getAllCards();
+    if (Array.isArray(r.data) && r.data.length) {
+      allCards.value = r.data;
+      return;
+    }
+  } catch (e) {}
   const list = [];
   for (const m of menus.value) {
     try {
@@ -588,14 +750,19 @@ const filteredCards = computed(() => {
       (c.url && c.url.toLowerCase().includes(q))
     );
   }
-
   if (!activeMenu.value) return [];
-  return allCards.value.filter(c => {
-    if (activeSubMenu.value) {
-      return c.sub_menu_id === activeSubMenu.value.id;
-    }
+  let list = allCards.value.filter(c => {
+    if (activeSubMenu.value) return c.sub_menu_id === activeSubMenu.value.id;
     return c.menu_id === activeMenu.value.id && !c.sub_menu_id;
   });
+  if (q) {
+    list = list.filter(c =>
+      (c.title && c.title.toLowerCase().includes(q)) ||
+      (c.desc && c.desc.toLowerCase().includes(q)) ||
+      (c.url && c.url.toLowerCase().includes(q))
+    );
+  }
+  return list.sort((a, b) => (a.order || 0) - (b.order || 0));
 });
 
 function selectMenu(menu) {
@@ -635,20 +802,25 @@ function handleSearch() {
   window.open(targetUrl, '_blank', 'noopener,noreferrer');
 }
 
-function toggleTheme() {
-  const order = ['light', 'dark', 'system'];
-  const nextIdx = (order.indexOf(themeMode.value) + 1) % order.length;
-  themeMode.value = order[nextIdx];
-  localStorage.setItem('nav_theme_mode', themeMode.value);
-}
-
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'detailed' ? 'compact' : 'detailed';
-  localStorage.setItem('nav_view_mode', viewMode.value);
+  try {
+    localStorage.setItem('nav_view_mode', viewMode.value);
+  } catch (e) {}
+  showToast(viewMode.value === 'detailed' ? '已切换为详情卡片视图' : '已切换为紧凑网格视图');
+}
+
+function goAdmin(tab = '') {
+  if (tab) {
+    router.push({ path: '/admin', query: { tab } });
+  } else {
+    router.push('/admin');
+  }
 }
 
 function getLogo(card) {
-  if (card.custom_logo_path) return `http://localhost:3000/uploads/${card.custom_logo_path}`;
+  if (card.display_logo) return card.display_logo;
+  if (card.custom_logo_path) return `/uploads/${card.custom_logo_path}`;
   if (card.logo_url) return card.logo_url;
   try {
     const urlObj = new URL(card.url);
@@ -674,399 +846,3 @@ function getHostname(urlStr) {
   }
 }
 </script>
-
-<style scoped>
-.portal-root {
-  --bg-primary: #0b1120;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --glass-bg: rgba(30, 41, 59, 0.56);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-hover-bg: rgba(30, 41, 59, 0.85);
-  --glass-hover-border: rgba(99, 102, 241, 0.45);
-  --accent: #6366f1;
-  --accent-glow: rgba(99, 102, 241, 0.25);
-
-  min-height: 100vh;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow-x: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.portal-root.theme-light {
-  --bg-primary: #f1f5f9;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --glass-bg: rgba(255, 255, 255, 0.84);
-  --glass-border: rgba(15, 23, 42, 0.08);
-  --glass-hover-bg: rgba(255, 255, 255, 0.98);
-  --glass-hover-border: rgba(99, 102, 241, 0.45);
-}
-
-.custom-bg-layer, .custom-bg-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  transition: all 0.4s ease;
-}
-
-/* Header */
-.glass-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: var(--glass-bg);
-  border-bottom: 1px solid var(--glass-border);
-  padding: 0.75rem 1.5rem;
-}
-
-.header-inner {
-  max-width: 1340px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.brand-area {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-}
-
-.brand-title {
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.main-menu-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding: 0.25rem;
-}
-
-.menu-tab-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.menu-tab-btn.active {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #ffffff;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.icon-action-btn, .admin-entry-btn, .theme-cycle-btn {
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--text-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-
-.icon-action-btn { width: 36px; }
-.theme-cycle-btn { padding: 0 0.7rem; gap: 0.35rem; font-size: 0.8rem; font-weight: 600; }
-.admin-entry-btn { padding: 0 0.8rem; gap: 0.35rem; font-size: 0.82rem; font-weight: 500; }
-
-/* Hero Section */
-.hero-section {
-  position: relative;
-  z-index: 1;
-  max-width: 820px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.hero-top-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  margin-bottom: 1.35rem;
-  width: 100%;
-}
-
-.clock-widget { text-align: center; }
-.time-display { font-size: 3rem; font-weight: 800; line-height: 1; }
-.date-greeting { margin-top: 0.35rem; font-size: 0.85rem; color: var(--text-secondary); }
-
-.weather-widget-card {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.65rem 1rem;
-  border-radius: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(16px);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.weather-widget-card:hover {
-  border-color: var(--accent);
-}
-.weather-main-info { display: flex; align-items: center; gap: 0.65rem; }
-.weather-emoji { font-size: 1.75rem; }
-.weather-city-line { display: flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; font-weight: 700; }
-.weather-auto-tag { font-size: 0.68rem; padding: 0.1rem 0.38rem; border-radius: 6px; background: rgba(99,102,241,0.18); color: #6366f1; }
-.weather-temp-val { font-weight: 800; color: #6366f1; }
-.weather-desc-badge { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; }
-.weather-reminder-line { font-size: 0.74rem; color: var(--text-secondary); margin-top: 0.15rem; }
-.weather-switch-btn {
-  padding: 0.3rem 0.6rem;
-  border-radius: 8px;
-  border: 1px solid var(--glass-border);
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--text-primary);
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-
-.weather-picker-panel {
-  width: 100%;
-  max-width: 640px;
-  margin-bottom: 1.2rem;
-  padding: 1rem;
-  border-radius: 16px;
-  background: var(--glass-hover-bg);
-  border: 1px solid var(--glass-hover-border);
-  backdrop-filter: blur(20px);
-}
-.weather-picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.picker-title { font-size: 0.82rem; font-weight: 700; }
-.picker-actions { display: flex; gap: 0.5rem; align-items: center; }
-.geo-locate-btn {
-  padding: 0.3rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  background: rgba(99, 102, 241, 0.15);
-  color: #6366f1;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.picker-close-btn { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; }
-.city-presets-grid { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
-.city-pill-btn {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--text-primary);
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-.city-pill-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
-.custom-city-form { display: flex; gap: 0.5rem; }
-.custom-city-input {
-  flex: 1;
-  padding: 0.45rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  outline: none;
-}
-.custom-city-submit {
-  padding: 0.45rem 0.9rem;
-  border-radius: 10px;
-  border: none;
-  background: #6366f1;
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.search-widget { width: 100%; }
-.engine-selector {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.65rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.engine-pill {
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  padding: 0.3rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-.engine-pill.active {
-  background: rgba(99, 102, 241, 0.16);
-  color: #818cf8;
-  border-color: rgba(99, 102, 241, 0.35);
-  font-weight: 600;
-}
-.engine-config-link {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  border: 1px dashed var(--glass-border);
-}
-.engine-config-link:hover { color: #6366f1; border-color: #6366f1; }
-
-.search-box-wrapper {
-  display: flex;
-  align-items: center;
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 0.35rem 0.45rem 0.35rem 1rem;
-}
-.search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.95rem;
-  padding: 0.6rem 0.75rem;
-  outline: none;
-}
-.search-submit-btn {
-  border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.88rem;
-  padding: 0.6rem 1.2rem;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.sub-menu-pills {
-  margin-top: 1.2rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-}
-.sub-pill {
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--text-secondary);
-  padding: 0.4rem 0.95rem;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  cursor: pointer;
-}
-.sub-pill.active { background: #6366f1; color: #fff; }
-
-.cards-main-container {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  max-width: 1340px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 1rem 1.5rem 3rem;
-}
-.cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-}
-.cards-grid.mode-compact {
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-}
-.nav-card-item {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 1rem;
-  border-radius: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  text-decoration: none;
-  color: var(--text-primary);
-  transition: all 0.22s ease;
-}
-.nav-card-item:hover {
-  transform: translateY(-3px);
-  background: var(--glass-hover-bg);
-  border-color: var(--glass-hover-border);
-}
-.card-icon-wrap {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  background: rgba(99, 102, 241, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.card-favicon { width: 24px; height: 24px; object-fit: contain; }
-.card-fallback-avatar { font-weight: 700; color: #6366f1; }
-.card-info { flex: 1; min-width: 0; }
-.card-title-row { display: flex; justify-content: space-between; align-items: center; }
-.card-title { font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-desc { margin: 0.25rem 0 0; font-size: 0.76rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.minimal-footer {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  padding: 1.5rem;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  border-top: 1px solid var(--glass-border);
-}
-</style>

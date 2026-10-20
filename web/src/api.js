@@ -46,7 +46,6 @@ export const addBackground = (data) => axios.post(`${BASE}/backgrounds`, data, {
 export const updateBackground = (id, data) => axios.put(`${BASE}/backgrounds/${id}`, data, { headers: authHeaders() });
 export const activateBackground = (id) => axios.put(`${BASE}/backgrounds/${id}/activate`, {}, { headers: authHeaders() });
 export const deleteBackground = (id) => axios.delete(`${BASE}/backgrounds/${id}`, { headers: authHeaders() });
-export const reorderBackgrounds = (items) => axios.put(`${BASE}/backgrounds/reorder`, { items }, { headers: authHeaders() });
 
 // 用户API
 export const getUserProfile = () => axios.get(`${BASE}/users/profile`, { headers: authHeaders() });
@@ -56,7 +55,6 @@ export const getUsers = () => axios.get(`${BASE}/users`, { headers: authHeaders(
 
 // 搜索引擎配置相关API
 export const getSearchEngines = () => axios.get(`${BASE}/search-engines`);
-export const getDefaultSearchEngine = () => axios.get(`${BASE}/search-engines/default`);
 export const addSearchEngine = (data) => axios.post(`${BASE}/search-engines`, data, { headers: authHeaders() });
 export const updateSearchEngine = (id, data) => axios.put(`${BASE}/search-engines/${id}`, data, { headers: authHeaders() });
 export const setDefaultSearchEngine = (id) => axios.put(`${BASE}/search-engines/${id}/default`, {}, { headers: authHeaders() });

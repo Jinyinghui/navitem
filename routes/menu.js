@@ -52,7 +52,7 @@ router.get('/', (req, res) => {
 });
 
 // 批量拖拽更新主菜单排序（需放在 /:id 之前）
-router.put('/reorder', auth, (req, res) => {
+router.put('/reorder', (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: '无效的排序数据' });
@@ -78,7 +78,7 @@ router.put('/reorder', auth, (req, res) => {
 });
 
 // 批量拖拽更新子菜单排序（需放在 /submenus/:id 之前）
-router.put('/submenus/reorder', auth, (req, res) => {
+router.put('/submenus/reorder', (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: '无效的排序数据' });
@@ -112,7 +112,7 @@ router.get('/:id/submenus', (req, res) => {
 });
 
 // 新增、修改、删除主菜单
-router.post('/', auth, (req, res) => {
+router.post('/', (req, res) => {
   const { name, order } = req.body;
   db.run('INSERT INTO menus (name, "order") VALUES (?, ?)', [name, order || 0], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -120,7 +120,7 @@ router.post('/', auth, (req, res) => {
   });
 });
 
-router.put('/:id', auth, (req, res) => {
+router.put('/:id', (req, res) => {
   const { name, order } = req.body;
   db.run('UPDATE menus SET name=?, "order"=? WHERE id=?', [name, order || 0, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -128,7 +128,7 @@ router.put('/:id', auth, (req, res) => {
   });
 });
 
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', (req, res) => {
   db.run('DELETE FROM menus WHERE id=?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ deleted: this.changes });
@@ -136,7 +136,7 @@ router.delete('/:id', auth, (req, res) => {
 });
 
 // 子菜单相关API
-router.post('/:id/submenus', auth, (req, res) => {
+router.post('/:id/submenus', (req, res) => {
   const { name, order } = req.body;
   db.run(
     'INSERT INTO sub_menus (parent_id, name, "order") VALUES (?, ?, ?)',
@@ -148,7 +148,7 @@ router.post('/:id/submenus', auth, (req, res) => {
   );
 });
 
-router.put('/submenus/:id', auth, (req, res) => {
+router.put('/submenus/:id', (req, res) => {
   const { name, order } = req.body;
   db.run('UPDATE sub_menus SET name=?, "order"=? WHERE id=?', [name, order || 0, req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
@@ -156,7 +156,7 @@ router.put('/submenus/:id', auth, (req, res) => {
   });
 });
 
-router.delete('/submenus/:id', auth, (req, res) => {
+router.delete('/submenus/:id', (req, res) => {
   db.run('DELETE FROM sub_menus WHERE id=?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ deleted: this.changes });

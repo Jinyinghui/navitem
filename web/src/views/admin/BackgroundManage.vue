@@ -1,166 +1,72 @@
 <template>
-  <div class="bg-manage">
-    <!-- Header -->
-    <div class="manage-header">
-      <div class="header-info">
-        <h2 class="header-title">背景设置</h2>
-        <p class="header-desc">支持渐变色背景和图片背景，拖拽调整显示顺序</p>
+  <div class="space-y-5">
+    <!-- Add Custom Background Bar -->
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <div>
+        <h2 class="text-base font-bold text-slate-100">背景主题与壁纸切换</h2>
+        <p class="text-xs text-slate-400 mt-0.5">点击任意预设或自定义卡片即可切换前台导航背景，支持调节背景模糊度与遮罩浓度</p>
       </div>
-      <button type="button" class="btn-add" @click="showAddForm = !showAddForm">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        添加背景
-      </button>
-    </div>
 
-    <!-- Active Background Tuning Panel -->
-    <div v-if="activeBg" class="tune-card">
-      <div class="tune-info">
-        <div class="tune-preview" :style="getPreviewStyle(activeBg)">
-          <div class="tune-preview-overlay" :style="{ background: `rgba(11, 17, 32, ${(activeBg.overlay_opacity ?? 20) / 100})` }"></div>
-          <span class="preview-label">当前使用中</span>
-        </div>
-        <div class="tune-text">
-          <div class="tune-name">{{ activeBg.name }}</div>
-          <div class="tune-sub">{{ activeBg.type === 'gradient' ? '渐变色' : '图片' }} · 拖动滑杆实时微调，松开即自动保存</div>
-        </div>
-      </div>
-      <div class="tune-sliders">
-        <div class="tune-row">
-          <label>模糊程度 <span class="tune-val">{{ activeBg.blur ?? 0 }}px</span></label>
-          <input
-            type="range" min="0" max="20" step="1"
-            :value="activeBg.blur ?? 0"
-            @input="onTuneInput('blur', $event.target.value)"
-            @change="persistTune()"
-            class="tune-slider"
-          />
-        </div>
-        <div class="tune-row">
-          <label>遮罩透明度 <span class="tune-val">{{ activeBg.overlay_opacity ?? 20 }}%</span></label>
-          <input
-            type="range" min="0" max="85" step="1"
-            :value="activeBg.overlay_opacity ?? 20"
-            @input="onTuneInput('overlay_opacity', $event.target.value)"
-            @change="persistTune()"
-            class="tune-slider"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Form -->
-    <div v-if="showAddForm" class="add-form-card">
-      <h3 class="form-title">新增背景 <span class="form-title-hint">（新增后将自动启用）</span></h3>
-      <form class="add-form" @submit.prevent="addBackground">
-        <div class="form-row">
-          <div class="form-group">
-            <label>背景名称 *</label>
-            <input v-model="newBg.name" placeholder="如: 星空渐变" class="form-input" required />
-          </div>
-          <div class="form-group">
-            <label>背景类型 *</label>
-            <select v-model="newBg.type" class="form-input form-select" @change="onTypeChange">
-              <option value="gradient">渐变色</option>
-              <option value="image">图片</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>背景值 *</label>
-          <input v-model="newBg.value" :placeholder="newBg.type === 'gradient' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'https://example.com/bg.jpg'" class="form-input font-mono" required />
-        </div>
-        <div v-if="newBg.type === 'image'" class="form-group">
-          <label>或选择本地图片</label>
-          <input ref="bgFileInput" type="file" accept="image/*" class="form-input form-file" @change="onBgFileChange" />
-          <span class="label-hint">选择后自动填入背景值并补全名称</span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>模糊程度 <span class="label-hint">0-20px</span></label>
-            <input v-model.number="newBg.blur" type="number" min="0" max="20" placeholder="0" class="form-input" />
-          </div>
-          <div class="form-group">
-            <label>遮罩透明度 <span class="label-hint">0-100%</span></label>
-            <input v-model.number="newBg.overlay_opacity" type="number" min="0" max="100" placeholder="30" class="form-input" />
-          </div>
-        </div>
-        <div class="form-actions">
-          <button type="button" class="btn-cancel" @click="showAddForm = false; resetForm()">取消</button>
-          <button type="submit" class="btn-submit">确认添加</button>
+      <form class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-3 border-t border-slate-800" @submit.prevent="handleAddBg">
+        <input v-model="newName" type="text" placeholder="背景名称（如：星空壁纸）*" required class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <select v-model="newType" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500">
+          <option value="image">图片壁纸 (URL / 本地上传)</option>
+          <option value="gradient">CSS 渐变表达式</option>
+        </select>
+        <input v-model="newValue" type="text" placeholder="输入图片 URL 或渐变表达式 *" required class="lg:col-span-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <div class="flex gap-2">
+          <label class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium cursor-pointer flex items-center justify-center shrink-0 transition" title="上传本地壁纸图片">
+            <span>上传图片</span>
+            <input type="file" accept="image/*" class="hidden" @change="handleFileUpload" />
+          </label>
+          <button type="submit" class="flex-1 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">+ 添加背景</button>
         </div>
       </form>
     </div>
 
-    <!-- Table -->
-    <div class="table-card">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width: 80px;">排序</th>
-            <th style="width: 18%;">名称</th>
-            <th style="width: 30%;">预览</th>
-            <th style="width: 100px; text-align: center;">状态</th>
-            <th style="width: 110px; text-align: center;">微调</th>
-            <th style="width: 70px; text-align: center;">删除</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(bg, idx) in backgrounds"
-            :key="bg.id"
-            draggable="true"
-            :class="{ 'is-dragging': dragBgIndex === idx, 'is-drag-over': dragOverBgIndex === idx && dragBgIndex !== idx }"
-            @dragstart="onDragStart($event, idx)"
-            @dragover.prevent="onDragOver($event, idx)"
-            @drop.prevent="onDrop($event, idx)"
-            @dragend="onDragEnd"
-          >
-            <td>
-              <div class="drag-cell">
-                <span class="drag-handle" title="按住拖动排序">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
-                    <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
-                    <circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/>
-                  </svg>
-                </span>
-                <span class="order-num">#{{ idx + 1 }}</span>
-              </div>
-            </td>
-            <td>
-              <input v-model="bg.name" @change="updateBackground(bg)" class="inline-input font-semibold" placeholder="背景名称" />
-            </td>
-            <td>
-              <div class="bg-preview" :style="getPreviewStyle(bg)">
-                <div class="tune-preview-overlay" :style="{ background: `rgba(11, 17, 32, ${(bg.overlay_opacity ?? 20) / 100})` }"></div>
-                <span class="preview-label">{{ bg.type === 'gradient' ? '渐变色' : '图片' }}</span>
-              </div>
-              <div class="preview-meta">模糊 {{ bg.blur ?? 0 }}px · 遮罩 {{ bg.overlay_opacity ?? 20 }}%</div>
-            </td>
-            <td style="text-align: center;">
-              <button
-                v-if="bg.is_active !== 1"
-                type="button"
-                class="btn-activate"
-                @click="activateBackground(bg)"
-              >激活</button>
-              <span v-else class="badge-active">✓ 使用中</span>
-            </td>
-            <td style="text-align: center;">
-              <div class="move-btns">
-                <button type="button" class="btn-move" :disabled="idx === 0" title="上移" @click="moveBg(idx, -1)">↑</button>
-                <button type="button" class="btn-move" :disabled="idx === backgrounds.length - 1" title="下移" @click="moveBg(idx, 1)">↓</button>
-              </div>
-            </td>
-            <td style="text-align: center;">
-              <button type="button" class="btn-delete" :disabled="backgrounds.length <= 1" @click="deleteBackground(bg)">删除</button>
-            </td>
-          </tr>
-          <tr v-if="backgrounds.length === 0">
-            <td colspan="6" class="empty-cell">暂无背景设置，请点击上方「添加背景」创建</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- Active Background Live Sliders -->
+    <div v-if="activeBg" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.18)]"></span>
+        <span class="text-xs text-slate-300">当前启用背景：<strong class="text-slate-100">{{ activeBg.name }}</strong></span>
+      </div>
+      <div class="flex flex-wrap items-center gap-6">
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-slate-400">背景模糊度 (<span>{{ activeBg.blur || 0 }}</span>px)</label>
+          <input v-model.number="activeBg.blur" type="range" min="0" max="20" step="1" class="accent-indigo-500 cursor-pointer" @change="saveBgSettings(activeBg)" />
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-slate-400">遮罩浓度 (<span>{{ activeBg.overlay_opacity ?? 20 }}</span>%)</label>
+          <input v-model.number="activeBg.overlay_opacity" type="range" min="0" max="85" step="5" class="accent-indigo-500 cursor-pointer" @change="saveBgSettings(activeBg)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Background Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div
+        v-for="bg in backgrounds"
+        :key="bg.id"
+        class="bg-slate-900 border-2 rounded-2xl overflow-hidden transition flex flex-col"
+        :class="bg.is_active === 1 ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-slate-800 hover:border-slate-700'"
+      >
+        <div class="h-36 relative cursor-pointer overflow-hidden group" :style="getPreviewStyle(bg)" @click="setActive(bg)">
+          <div class="absolute inset-0 transition" :style="{ background: `rgba(11, 17, 32, ${(bg.overlay_opacity ?? 20) / 100})` }"></div>
+          <span v-if="bg.is_active === 1" class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-indigo-600 text-white text-[11px] font-bold shadow">✓ 当前使用中</span>
+          <span v-else class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 text-slate-200 text-[11px] opacity-0 group-hover:opacity-100 transition">点击启用</span>
+          <span class="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/75 text-slate-300 text-[11px] backdrop-blur-sm">{{ bg.type === 'image' ? '图片壁纸' : '极光渐变' }}</span>
+        </div>
+        <div class="p-3.5 flex items-center justify-between gap-2 bg-slate-900">
+          <div class="min-w-0 flex-1">
+            <input v-model="bg.name" type="text" class="w-full px-2 py-1 rounded-lg bg-transparent hover:bg-slate-950 focus:bg-slate-950 border border-transparent focus:border-slate-700 text-xs font-bold text-slate-100 outline-none truncate" @change="saveBgSettings(bg)" />
+            <div class="text-[11px] text-slate-500 px-2 mt-0.5">模糊 {{ bg.blur || 0 }}px · 遮罩 {{ bg.overlay_opacity ?? 20 }}%</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button v-if="bg.is_active !== 1" type="button" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-semibold transition" @click="setActive(bg)">启用</button>
+            <button v-if="backgrounds.length > 1" type="button" class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white text-xs transition" @click="removeBg(bg.id)">删除</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -169,248 +75,114 @@
 import { ref, computed, onMounted } from 'vue';
 import {
   getBackgrounds,
-  addBackground as apiAddBackground,
-  updateBackground as apiUpdateBackground,
-  activateBackground as apiActivateBackground,
-  deleteBackground as apiDeleteBackground,
-  reorderBackgrounds as apiReorderBackgrounds
+  addBackground,
+  updateBackground,
+  activateBackground,
+  deleteBackground,
+  uploadLogo
 } from '../../api';
+import { DEFAULT_BACKGROUNDS } from '../../defaultData';
 
-const backgrounds = ref([]);
-const showAddForm = ref(false);
-const newBg = ref({ name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 20 });
-const bgFileInput = ref(null);
+const backgrounds = ref([...DEFAULT_BACKGROUNDS]);
+const newName = ref('');
+const newType = ref('image');
+const newValue = ref('');
 
-const dragBgIndex = ref(null);
-const dragOverBgIndex = ref(null);
+const activeBg = computed(() => backgrounds.value.find(b => b.is_active === 1) || backgrounds.value[0]);
 
-const activeBg = computed(() => backgrounds.value.find(b => b.is_active === 1) || null);
+onMounted(loadBgs);
 
-onMounted(() => {
-  loadBackgrounds();
-});
-
-async function loadBackgrounds() {
-  const res = await getBackgrounds();
-  backgrounds.value = res.data;
+async function loadBgs() {
+  try {
+    const res = await getBackgrounds();
+    if (Array.isArray(res.data) && res.data.length) {
+      backgrounds.value = res.data;
+    }
+  } catch (e) {}
 }
 
-function resetForm() {
-  newBg.value = { name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 20 };
-  if (bgFileInput.value) bgFileInput.value.value = '';
-}
-
-// 切换类型时按类型给模糊/遮罩默认值（与静态页面一致：图片 2/35，渐变 0/20）
-function onTypeChange() {
-  if (newBg.value.type === 'image') {
-    newBg.value.blur = 2;
-    newBg.value.overlay_opacity = 35;
-  } else {
-    newBg.value.blur = 0;
-    newBg.value.overlay_opacity = 20;
+function getPreviewStyle(bg) {
+  if (bg.type === 'image') {
+    return {
+      backgroundImage: `url(${bg.value})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    };
   }
+  return { background: bg.value };
 }
 
-function onBgFileChange(e) {
-  const file = e.target.files && e.target.files[0];
+async function handleFileUpload(e) {
+  const file = e.target.files?.[0];
   if (!file) return;
+  try {
+    const res = await uploadLogo(file);
+    if (res.data?.url) {
+      newType.value = 'image';
+      newValue.value = res.data.url;
+      if (!newName.value) newName.value = file.name.replace(/\.[^.]+$/, '');
+      return;
+    }
+  } catch (err) {}
+  // Fallback to base64 DataURL
   const reader = new FileReader();
   reader.onload = () => {
-    newBg.value.type = 'image';
-    newBg.value.value = reader.result;
-    newBg.value.blur = 2;
-    newBg.value.overlay_opacity = 35;
-    if (!newBg.value.name.trim()) {
-      newBg.value.name = file.name.replace(/\.[^.]+$/, '');
-    }
+    newType.value = 'image';
+    newValue.value = String(reader.result || '');
+    if (!newName.value) newName.value = file.name.replace(/\.[^.]+$/, '');
   };
   reader.readAsDataURL(file);
 }
 
-function getPreviewStyle(bg) {
-  if (bg.type === 'gradient') {
-    return { background: bg.value };
-  } else {
-    return { backgroundImage: `url(${bg.value})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+async function handleAddBg() {
+  if (!newName.value.trim() || !newValue.value.trim()) return;
+  const payload = {
+    name: newName.value.trim(),
+    type: newType.value,
+    value: newValue.value.trim(),
+    blur: newType.value === 'image' ? 2 : 0,
+    overlay_opacity: newType.value === 'image' ? 35 : 20,
+    is_active: 1,
+    order: backgrounds.value.length + 1
+  };
+  try {
+    await addBackground(payload);
+    await loadBgs();
+  } catch (e) {
+    backgrounds.value.forEach(b => { b.is_active = 0; });
+    backgrounds.value.push({ id: Date.now(), ...payload });
   }
+  newName.value = '';
+  newValue.value = '';
 }
 
-async function addBackground() {
-  await apiAddBackground({
-    name: newBg.value.name,
-    type: newBg.value.type,
-    value: newBg.value.value,
-    blur: newBg.value.blur ?? 0,
-    overlay_opacity: newBg.value.overlay_opacity ?? 20,
-    is_active: 1
-  });
-  showAddForm.value = false;
-  resetForm();
-  await loadBackgrounds();
+async function setActive(bg) {
+  backgrounds.value.forEach(b => { b.is_active = (b.id === bg.id ? 1 : 0); });
+  try {
+    await activateBackground(bg.id);
+    await loadBgs();
+  } catch (e) {}
 }
 
-async function updateBackground(bg) {
-  await apiUpdateBackground(bg.id, {
-    name: bg.name,
-    type: bg.type,
-    value: bg.value,
-    blur: bg.blur,
-    overlay_opacity: bg.overlay_opacity
-  });
+async function saveBgSettings(bg) {
+  try {
+    await updateBackground(bg.id, {
+      name: bg.name,
+      type: bg.type,
+      value: bg.value,
+      blur: bg.blur,
+      overlay_opacity: bg.overlay_opacity,
+      order: bg.order
+    });
+  } catch (e) {}
 }
 
-// 微调滑杆：拖动时只更新本地即时预览，松开（change）时再落库
-function onTuneInput(field, val) {
-  if (activeBg.value) activeBg.value[field] = Number(val);
-}
-async function persistTune() {
-  if (!activeBg.value) return;
-  await apiUpdateBackground(activeBg.value.id, {
-    blur: activeBg.value.blur ?? 0,
-    overlay_opacity: activeBg.value.overlay_opacity ?? 20
-  });
-}
-
-async function activateBackground(bg) {
-  await apiActivateBackground(bg.id);
-  backgrounds.value.forEach(item => {
-    item.is_active = item.id === bg.id ? 1 : 0;
-  });
-}
-
-async function deleteBackground(bg) {
+async function removeBg(id) {
   if (backgrounds.value.length <= 1) return;
-  if (!confirm(`确定要删除「${bg.name}」吗？`)) return;
-  await apiDeleteBackground(bg.id);
-  await loadBackgrounds();
-}
-
-function moveBg(idx, dir) {
-  const target = idx + dir;
-  if (target < 0 || target >= backgrounds.value.length) return;
-  const list = [...backgrounds.value];
-  const [moved] = list.splice(idx, 1);
-  list.splice(target, 0, moved);
-  list.forEach((bg, i) => { bg.order = i + 1; });
-  backgrounds.value = list;
-  apiReorderBackgrounds(list.map((bg, i) => ({ id: bg.id, order: i + 1 })));
-}
-
-function onDragStart(e, idx) {
-  dragBgIndex.value = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.currentTarget.classList.add('is-dragging');
-}
-
-function onDragOver(e, idx) {
-  if (dragBgIndex.value === null) return;
-  dragOverBgIndex.value = idx;
-  e.currentTarget.classList.add('is-drag-over');
-}
-
-function onDragLeave(e) {
-  e.currentTarget.classList.remove('is-drag-over');
-}
-
-async function onDrop(e, targetIdx) {
-  if (dragBgIndex.value === null || dragBgIndex.value === targetIdx) {
-    onDragEnd();
-    return;
-  }
-  const list = [...backgrounds.value];
-  const [moved] = list.splice(dragBgIndex.value, 1);
-  list.splice(targetIdx, 0, moved);
-  list.forEach((bg, i) => { bg.order = i + 1; });
-  backgrounds.value = list;
-  onDragEnd();
-  await apiReorderBackgrounds(list.map((bg, i) => ({ id: bg.id, order: i + 1 })));
-}
-
-function onDragEnd() {
-  dragBgIndex.value = null;
-  dragOverBgIndex.value = null;
-  document.querySelectorAll('[draggable="true"]').forEach(el => {
-    el.classList.remove('is-dragging', 'is-drag-over');
-  });
+  backgrounds.value = backgrounds.value.filter(b => b.id !== id);
+  try {
+    await deleteBackground(id);
+    await loadBgs();
+  } catch (e) {}
 }
 </script>
-
-<style scoped>
-.bg-manage { display: flex; flex-direction: column; gap: 1.25rem; }
-.manage-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
-.header-title { margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc; }
-.header-desc { margin: 0.35rem 0 0; font-size: 0.875rem; color: #64748b; }
-.btn-add { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: #6366f1; color: #fff; border: none; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-add:hover { background: #4f46e5; transform: translateY(-1px); }
-
-/* Active background tuning panel */
-.tune-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.25rem 1.5rem; display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
-.tune-info { display: flex; align-items: center; gap: 1rem; min-width: 240px; }
-.tune-preview { height: 64px; width: 150px; border-radius: 0.625rem; border: 1px solid #334155; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.tune-preview-overlay { position: absolute; inset: 0; pointer-events: none; }
-.tune-text .tune-name { font-size: 0.95rem; font-weight: 700; color: #f1f5f9; }
-.tune-text .tune-sub { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
-.tune-sliders { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 0.85rem; }
-.tune-row label { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.35rem; }
-.tune-val { color: #a5b4fc; font-weight: 700; }
-.tune-slider { width: 100%; accent-color: #6366f1; cursor: pointer; }
-
-.add-form-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem; }
-.form-title { margin: 0 0 1.25rem; font-size: 1rem; font-weight: 600; color: #f1f5f9; }
-.form-title-hint { font-size: 0.75rem; font-weight: 400; color: #64748b; }
-.add-form { display: flex; flex-direction: column; gap: 1rem; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.form-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.form-group label { font-size: 0.8rem; font-weight: 600; color: #94a3b8; }
-.label-hint { font-weight: 400; color: #64748b; margin-left: 0.5rem; }
-.form-input { padding: 0.625rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 0.625rem; color: #f1f5f9; font-size: 0.875rem; transition: border-color 0.2s; }
-.form-input:focus { outline: none; border-color: #6366f1; }
-.form-input.font-mono { font-family: monospace; }
-.form-select { cursor: pointer; }
-.form-file { cursor: pointer; }
-.form-file::file-selector-button { background: #334155; border: none; border-radius: 0.5rem; color: #f1f5f9; padding: 0.375rem 0.75rem; margin-right: 0.75rem; font-size: 0.8rem; cursor: pointer; }
-.form-file::file-selector-button:hover { background: #6366f1; }
-.form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
-.btn-cancel { padding: 0.625rem 1.25rem; background: transparent; border: 1px solid #475569; border-radius: 0.625rem; color: #94a3b8; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-.btn-cancel:hover { background: #334155; }
-.btn-submit { padding: 0.625rem 1.5rem; background: #6366f1; border: none; border-radius: 0.625rem; color: #fff; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.btn-submit:hover { background: #4f46e5; }
-
-.table-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; overflow: hidden; }
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.data-table th { background: #0f172a; padding: 0.875rem 0.75rem; text-align: left; font-weight: 600; color: #94a3b8; border-bottom: 1px solid #334155; }
-.data-table td { padding: 0.75rem; border-bottom: 1px solid #1e293b; vertical-align: middle; }
-.data-table tr:last-child td { border-bottom: none; }
-.data-table tr:hover { background: rgba(30, 41, 59, 0.5); }
-.data-table tr.is-dragging { opacity: 0.4; }
-.data-table tr.is-drag-over { background: rgba(99, 102, 241, 0.1) !important; border-color: #6366f1; }
-
-.drag-cell { display: flex; align-items: center; gap: 0.5rem; }
-.drag-handle { cursor: grab; color: #475569; display: flex; padding: 0.25rem; border-radius: 0.375rem; transition: color 0.2s; }
-.drag-handle:hover { color: #6366f1; }
-.drag-handle:active { cursor: grabbing; }
-.order-num { font-size: 0.75rem; font-weight: 600; color: #64748b; }
-.inline-input { width: 100%; padding: 0.5rem 0.625rem; background: #0f172a; border: 1px solid transparent; border-radius: 0.5rem; color: #f1f5f9; font-size: 0.8rem; transition: border-color 0.2s; }
-.inline-input:hover { border-color: #475569; }
-.inline-input:focus { outline: none; border-color: #6366f1; background: #1e293b; }
-.font-semibold { font-weight: 600; }
-
-.bg-preview { height: 48px; width: 160px; border-radius: 0.5rem; border: 1px solid #334155; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.preview-label { font-size: 0.65rem; color: rgba(255,255,255,0.7); text-shadow: 0 1px 2px rgba(0,0,0,0.5); position: relative; z-index: 1; }
-.preview-meta { margin-top: 0.3rem; font-size: 0.68rem; color: #64748b; }
-
-.badge-active { display: inline-block; padding: 0.375rem 0.75rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; color: #34d399; font-size: 0.75rem; font-weight: 600; }
-.btn-activate { padding: 0.375rem 0.75rem; background: #334155; border: none; border-radius: 0.5rem; color: #94a3b8; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-.btn-activate:hover { background: #6366f1; color: #fff; }
-
-.move-btns { display: inline-flex; gap: 0.375rem; }
-.btn-move { width: 1.75rem; height: 1.75rem; display: flex; align-items: center; justify-content: center; background: #334155; border: none; border-radius: 0.375rem; color: #94a3b8; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-.btn-move:hover:not(:disabled) { background: #6366f1; color: #fff; }
-.btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.btn-delete { padding: 0.375rem 0.75rem; background: rgba(244, 63, 94, 0.15); border: none; border-radius: 0.5rem; color: #fb7185; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-.btn-delete:hover:not(:disabled) { background: #dc2626; color: #fff; }
-.btn-delete:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.empty-cell { text-align: center; padding: 3rem; color: #64748b; }
-</style>

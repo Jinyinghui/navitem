@@ -1,133 +1,123 @@
 <template>
-  <div class="card-manage">
-    <div class="card-header">
-      <div class="header-top">
+  <div class="space-y-5">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="page-title">导航卡片管理（支持拖拽排序）</h2>
-          <p class="page-sub">按住表格左侧 ⠿ 手柄即可上下拖动卡片调整展示顺序，或直接修改内容自动保存</p>
+          <h2 class="text-base font-bold text-slate-100">网站导航卡片管理</h2>
+          <p class="text-xs text-slate-400 mt-0.5">按住表格左侧 ⠿ 手柄即可上下拖动卡片调整排序，或直接编辑内容自动保存</p>
         </div>
-        <div class="filter-group">
-          <select v-model="selectedMenuId" class="input select-box" @change="onMenuChange">
-            <option v-for="menu in menus" :value="menu.id" :key="menu.id">📂 {{ menu.name }}</option>
+        <div class="flex flex-wrap items-center gap-2">
+          <select v-model="selectedMenuId" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" @change="onMenuChange">
+            <option v-for="m in menus" :key="m.id" :value="m.id">📂 {{ m.name }}</option>
           </select>
-          <select v-model="selectedSubMenuId" class="input select-box" @change="onSubMenuChange">
+          <select v-model="selectedSubMenuId" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" @change="loadCards">
             <option value="">主菜单直属卡片</option>
-            <option v-for="subMenu in currentSubMenus" :value="subMenu.id" :key="subMenu.id">↳ {{ subMenu.name }}</option>
+            <option v-for="s in currentSubMenus" :key="s.id" :value="s.id">↳ {{ s.name }}</option>
           </select>
-          <input v-model="tableFilter" placeholder="搜索当前列表卡片..." class="input filter-input" />
+          <input v-model="filterKeyword" type="text" placeholder="过滤当前列表卡片..." class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
         </div>
       </div>
 
-      <form class="card-add-bar" @submit.prevent="addCard">
-        <input v-model="newCardTitle" placeholder="卡片标题 *" class="input" required />
-        <input v-model="newCardUrl" placeholder="目标网址 https://... *" class="input" required />
-        <input v-model="newCardDesc" placeholder="简短描述（可选）" class="input" />
-        <input v-model="newCardLogo" placeholder="自定义图标 URL（可选）" class="input" />
-        <button type="submit" class="btn btn-primary">+ 添加卡片</button>
+      <form class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-3 border-t border-slate-800" @submit.prevent="handleAddCard">
+        <input v-model="newTitle" type="text" placeholder="卡片标题 *" required class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <input v-model="newUrl" type="url" placeholder="目标网址 https://... *" required class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <input v-model="newDesc" type="text" placeholder="简短描述（可选）" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <input v-model="newLogo" type="text" placeholder="自定义图标 URL（可选）" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">+ 添加导航卡片</button>
       </form>
     </div>
 
-    <div class="card-table-card">
-      <table v-if="filteredCards.length > 0" class="card-table">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-x-auto">
+      <table class="w-full text-left border-collapse">
         <thead>
-          <tr>
-            <th style="width: 72px;">拖拽</th>
-            <th style="width: 56px;">图标</th>
-            <th style="width: 16%;">标题</th>
-            <th style="width: 25%;">目标网址</th>
-            <th style="width: 22%;">描述说明</th>
-            <th style="width: 18%;">自定义 Logo 链接</th>
-            <th style="width: 90px; text-align: center;">微调</th>
-            <th style="width: 80px; text-align: center;">操作</th>
+          <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 bg-slate-900/60">
+            <th class="py-3 px-4 w-20">拖拽</th>
+            <th class="py-3 px-3 w-14">图标</th>
+            <th class="py-3 px-3">标题</th>
+            <th class="py-3 px-3">目标网址</th>
+            <th class="py-3 px-3">描述说明</th>
+            <th class="py-3 px-3 text-center w-20">微调</th>
+            <th class="py-3 px-4 text-center w-20">操作</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-slate-800/70 text-xs">
+          <tr v-if="displayedCards.length === 0">
+            <td colspan="7" class="py-8 text-center text-slate-500">当前分类下暂无卡片，可在上方表单中添加</td>
+          </tr>
           <tr
-            v-for="(card, cIdx) in filteredCards"
+            v-for="(card, cIdx) in displayedCards"
             :key="card.id"
-            :draggable="!tableFilter.trim()"
-            :class="{
-              'is-dragging': dragCardIndex === cIdx,
-              'is-drag-over': dragOverCardIndex === cIdx && dragCardIndex !== cIdx
-            }"
-            @dragstart="onCardDragStart($event, cIdx)"
-            @dragover.prevent="onCardDragOver($event, cIdx)"
-            @drop.prevent="onCardDrop($event, cIdx)"
-            @dragend="onCardDragEnd"
+            :draggable="!filterKeyword"
+            class="hover:bg-slate-900/40 transition"
+            @dragstart="onDragStart($event, cIdx)"
+            @dragover.prevent
+            @drop.prevent="onDrop($event, cIdx)"
           >
-            <td>
-              <div class="drag-cell">
-                <span class="drag-handle" :title="tableFilter.trim() ? '清空搜索框后可拖拽排序' : '按住上下拖动排序'">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <td class="py-2.5 px-4">
+              <div class="flex items-center gap-1.5">
+                <span class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
                     <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
                     <circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/>
                   </svg>
                 </span>
-                <span class="order-tag">#{{ cIdx + 1 }}</span>
+                <span class="text-[11px] font-bold text-slate-500">#{{ cIdx + 1 }}</span>
               </div>
             </td>
-            <td>
-              <div class="logo-preview">
-                <img :src="getPreviewLogo(card)" alt="" @error="e => e.target.style.display='none'" />
+            <td class="py-2.5 px-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-400 font-bold text-xs">
+                {{ (card.title || 'N').charAt(0).toUpperCase() }}
               </div>
             </td>
-            <td><input v-model="card.title" @blur="updateCard(card)" class="table-input font-medium" /></td>
-            <td><input v-model="card.url" @blur="updateCard(card)" class="table-input" /></td>
-            <td><input v-model="card.desc" @blur="updateCard(card)" class="table-input" placeholder="添加描述..." /></td>
-            <td><input v-model="card.logo_url" @blur="updateCard(card)" class="table-input" placeholder="默认自动获取 Favicon" /></td>
-            <td style="text-align: center;">
-              <div class="move-btns">
-                <button type="button" class="btn-move" :disabled="cIdx === 0 || !!tableFilter.trim()" title="上移" @click="moveCard(cIdx, -1)">↑</button>
-                <button type="button" class="btn-move" :disabled="cIdx === filteredCards.length - 1 || !!tableFilter.trim()" title="下移" @click="moveCard(cIdx, 1)">↓</button>
+            <td class="py-2.5 px-3">
+              <input v-model="card.title" type="text" class="w-full px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-100" @change="saveCard(card)" />
+            </td>
+            <td class="py-2.5 px-3">
+              <input v-model="card.url" type="text" class="w-full px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300" @change="saveCard(card)" />
+            </td>
+            <td class="py-2.5 px-3">
+              <input v-model="card.desc" type="text" placeholder="添加描述..." class="w-full px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300" @change="saveCard(card)" />
+            </td>
+            <td class="py-2.5 px-3 text-center">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" :disabled="cIdx === 0 || !!filterKeyword" class="w-6 h-6 rounded bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" @click="moveCard(cIdx, -1)">↑</button>
+                <button type="button" :disabled="cIdx === displayedCards.length - 1 || !!filterKeyword" class="w-6 h-6 rounded bg-slate-800 hover:bg-indigo-600 disabled:opacity-30 text-xs font-bold text-slate-300 hover:text-white transition" @click="moveCard(cIdx, 1)">↓</button>
               </div>
             </td>
-            <td style="text-align: center;">
-              <button type="button" class="btn-delete" @click="deleteCard(card.id)" title="删除卡片">删除</button>
+            <td class="py-2.5 px-4 text-center">
+              <button type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 hover:text-white text-rose-400 text-xs transition" @click="removeCard(card.id)">删除</button>
             </td>
           </tr>
         </tbody>
       </table>
-      <div v-else class="empty-table">
-        当前分类下暂无导航卡片，请在上方表单中添加。
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
-import {
-  getMenus,
-  getCards,
-  addCard as apiAddCard,
-  updateCard as apiUpdateCard,
-  deleteCard as apiDeleteCard,
-  reorderCards as apiReorderCards
-} from '../../api';
+import { ref, computed, onMounted } from 'vue';
+import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards } from '../../api';
 
 const menus = ref([]);
 const cards = ref([]);
-const selectedMenuId = ref();
+const selectedMenuId = ref(null);
 const selectedSubMenuId = ref('');
-const tableFilter = ref('');
+const filterKeyword = ref('');
 
-const newCardTitle = ref('');
-const newCardUrl = ref('');
-const newCardDesc = ref('');
-const newCardLogo = ref('');
-
-const dragCardIndex = ref(null);
-const dragOverCardIndex = ref(null);
+const newTitle = ref('');
+const newUrl = ref('');
+const newDesc = ref('');
+const newLogo = ref('');
+const dragIdx = ref(null);
 
 const currentSubMenus = computed(() => {
-  if (!selectedMenuId.value) return [];
-  const menu = menus.value.find(m => m.id === selectedMenuId.value);
-  return menu?.subMenus || [];
+  const m = menus.value.find(x => x.id === selectedMenuId.value);
+  return m?.subMenus || [];
 });
 
-const filteredCards = computed(() => {
-  const q = tableFilter.value.trim().toLowerCase();
+const displayedCards = computed(() => {
+  const q = filterKeyword.value.trim().toLowerCase();
   if (!q) return cards.value;
   return cards.value.filter(c =>
     (c.title && c.title.toLowerCase().includes(q)) ||
@@ -138,360 +128,74 @@ const filteredCards = computed(() => {
 
 onMounted(async () => {
   const res = await getMenus();
-  menus.value = res.data;
+  menus.value = res.data || [];
   if (menus.value.length) {
     selectedMenuId.value = menus.value[0].id;
-    selectedSubMenuId.value = '';
+    await loadCards();
   }
 });
 
-watch(selectedMenuId, () => {
+async function onMenuChange() {
   selectedSubMenuId.value = '';
-  loadCards();
-});
-
-watch(selectedSubMenuId, loadCards);
-
-function onMenuChange() {
-  selectedSubMenuId.value = '';
-}
-
-function onSubMenuChange() {
-  loadCards();
+  await loadCards();
 }
 
 async function loadCards() {
   if (!selectedMenuId.value) return;
   const res = await getCards(selectedMenuId.value, selectedSubMenuId.value || null);
-  cards.value = res.data;
+  cards.value = res.data || [];
 }
 
-function getPreviewLogo(card) {
-  if (card.display_logo) return card.display_logo;
-  if (card.logo_url) return card.logo_url;
-  try {
-    return new URL(card.url).origin + '/favicon.ico';
-  } catch {
-    return '/default-favicon.png';
-  }
+async function handleAddCard() {
+  if (!newTitle.value.trim() || !newUrl.value.trim()) return;
+  await addCard({
+    menu_id: selectedMenuId.value,
+    sub_menu_id: selectedSubMenuId.value || null,
+    title: newTitle.value.trim(),
+    url: newUrl.value.trim(),
+    desc: newDesc.value.trim(),
+    logo_url: newLogo.value.trim(),
+    order: cards.value.length + 1
+  });
+  newTitle.value = '';
+  newUrl.value = '';
+  newDesc.value = '';
+  newLogo.value = '';
+  await loadCards();
 }
 
-function onCardDragStart(e, idx) {
-  if (tableFilter.value.trim()) return;
-  dragCardIndex.value = idx;
-  e.dataTransfer.effectAllowed = 'move';
+async function saveCard(card) {
+  await updateCard(card.id, card);
 }
 
-function onCardDragOver(e, idx) {
-  if (dragCardIndex.value === null) return;
-  dragOverCardIndex.value = idx;
+async function removeCard(id) {
+  await deleteCard(id);
+  await loadCards();
 }
 
-async function onCardDrop(e, targetIdx) {
-  if (dragCardIndex.value === null || dragCardIndex.value === targetIdx) {
-    onCardDragEnd();
-    return;
-  }
+function onDragStart(e, idx) {
+  dragIdx.value = idx;
+}
+
+async function onDrop(e, targetIdx) {
+  if (dragIdx.value === null || dragIdx.value === targetIdx) return;
   const list = [...cards.value];
-  const [moved] = list.splice(dragCardIndex.value, 1);
+  const [moved] = list.splice(dragIdx.value, 1);
   list.splice(targetIdx, 0, moved);
   list.forEach((c, i) => { c.order = i + 1; });
   cards.value = list;
-  onCardDragEnd();
-  await persistCardOrder();
+  dragIdx.value = null;
+  await reorderCards(cards.value.map((c, i) => ({ id: c.id, order: i + 1 })));
 }
 
-function onCardDragEnd() {
-  dragCardIndex.value = null;
-  dragOverCardIndex.value = null;
-}
-
-async function moveCard(idx, delta) {
-  const target = idx + delta;
+async function moveCard(idx, dir) {
+  const target = idx + dir;
   if (target < 0 || target >= cards.value.length) return;
   const list = [...cards.value];
   const [moved] = list.splice(idx, 1);
   list.splice(target, 0, moved);
   list.forEach((c, i) => { c.order = i + 1; });
   cards.value = list;
-  await persistCardOrder();
-}
-
-async function persistCardOrder() {
-  const items = cards.value.map((c, i) => ({ id: c.id, order: i + 1 }));
-  await apiReorderCards(items);
-}
-
-async function addCard() {
-  if (!newCardTitle.value.trim() || !newCardUrl.value.trim()) return;
-  await apiAddCard({
-    menu_id: selectedMenuId.value,
-    sub_menu_id: selectedSubMenuId.value || null,
-    title: newCardTitle.value.trim(),
-    url: newCardUrl.value.trim(),
-    desc: newCardDesc.value.trim(),
-    logo_url: newCardLogo.value.trim(),
-    order: cards.value.length + 1
-  });
-  newCardTitle.value = '';
-  newCardUrl.value = '';
-  newCardDesc.value = '';
-  newCardLogo.value = '';
-  await loadCards();
-}
-
-async function updateCard(card) {
-  await apiUpdateCard(card.id, {
-    menu_id: selectedMenuId.value,
-    sub_menu_id: selectedSubMenuId.value || null,
-    title: card.title,
-    url: card.url,
-    logo_url: card.logo_url,
-    desc: card.desc,
-    order: card.order
-  });
-  await loadCards();
-}
-
-async function deleteCard(id) {
-  await apiDeleteCard(id);
-  await loadCards();
+  await reorderCards(cards.value.map((c, i) => ({ id: c.id, order: i + 1 })));
 }
 </script>
-
-<style scoped>
-.card-manage {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.card-header {
-  background: #fff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 1px solid #e2e8f0;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.page-title {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.2rem;
-  color: #0f172a;
-}
-
-.page-sub {
-  margin: 0;
-  font-size: 0.86rem;
-  color: #64748b;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
-
-.card-add-bar {
-  display: grid;
-  grid-template-columns: 1.2fr 1.8fr 1.5fr 1.5fr auto;
-  gap: 0.65rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.input {
-  padding: 0.6rem 0.85rem;
-  border-radius: 10px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #0f172a;
-  font-size: 0.88rem;
-  outline: none;
-}
-
-.input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-}
-
-.btn-primary {
-  padding: 0.6rem 1.2rem;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.card-table-card {
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  overflow-x: auto;
-}
-
-.card-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.card-table th,
-.card-table td {
-  padding: 0.7rem 0.85rem;
-  text-align: left;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.card-table th {
-  background: #f8fafc;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.card-table tr.is-dragging {
-  opacity: 0.45;
-  background: #f1f5f9;
-}
-
-.card-table tr.is-drag-over td {
-  border-top: 2px solid #6366f1;
-  background: #eef2ff;
-}
-
-.drag-cell {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.drag-handle {
-  cursor: grab;
-  color: #94a3b8;
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem;
-  border-radius: 5px;
-}
-
-.drag-handle:hover {
-  color: #4f46e5;
-  background: #eef2ff;
-}
-
-.order-tag {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.move-btns {
-  display: inline-flex;
-  gap: 0.25rem;
-}
-
-.btn-move {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.btn-move:hover:not(:disabled) {
-  border-color: #6366f1;
-  color: #4f46e5;
-  background: #eef2ff;
-}
-
-.btn-move:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.logo-preview {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: #f1f5f9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.logo-preview img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-
-.table-input {
-  width: 100%;
-  padding: 0.45rem 0.6rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #0f172a;
-  font-size: 0.86rem;
-}
-
-.table-input:hover,
-.table-input:focus {
-  border-color: #cbd5e1;
-  background: #f8fafc;
-  outline: none;
-}
-
-.font-medium {
-  font-weight: 600;
-}
-
-.btn-delete {
-  padding: 0.35rem 0.65rem;
-  border-radius: 8px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #dc2626;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.btn-delete:hover {
-  background: #dc2626;
-  color: #fff;
-}
-
-.empty-table {
-  padding: 3rem;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 0.92rem;
-}
-
-@media (max-width: 960px) {
-  .card-add-bar {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

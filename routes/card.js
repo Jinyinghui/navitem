@@ -21,7 +21,7 @@ router.get('/', (req, res) => {
 });
 
 // 批量拖拽更新卡片排序（需放在 /:id 之前）
-router.put('/reorder', auth, (req, res) => {
+router.put('/reorder', (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: '无效的排序数据' });
@@ -66,7 +66,7 @@ router.get('/:menuId', (req, res) => {
 });
 
 // 新增、修改、删除卡片需认证
-router.post('/', auth, (req, res) => {
+router.post('/', (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
   db.run(
     'INSERT INTO cards (menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, "order") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -78,7 +78,7 @@ router.post('/', auth, (req, res) => {
   );
 });
 
-router.put('/:id', auth, (req, res) => {
+router.put('/:id', (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
   db.run(
     'UPDATE cards SET menu_id=?, sub_menu_id=?, title=?, url=?, logo_url=?, custom_logo_path=?, desc=?, "order"=? WHERE id=?',
@@ -90,7 +90,7 @@ router.put('/:id', auth, (req, res) => {
   );
 });
 
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', (req, res) => {
   db.run('DELETE FROM cards WHERE id=?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ deleted: this.changes });

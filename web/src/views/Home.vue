@@ -343,6 +343,95 @@
           </button>
         </div>
 
+        <!-- Widgets Row: Hitokoto / Todo / Countdown -->
+        <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 select-none">
+          <!-- Hitokoto Widget -->
+          <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold">💬 一言</span>
+              <button
+                type="button"
+                class="text-[11px] text-slate-400 hover:text-indigo-400 transition disabled:opacity-40"
+                :disabled="hitokotoLoading"
+                title="换一句"
+                @click="fetchHitokoto"
+              >↻ 换一句</button>
+            </div>
+            <p class="mt-2 text-xs leading-relaxed flex-1 cursor-pointer" title="点击换一句" @click="fetchHitokoto">{{ hitokoto.text }}</p>
+            <div class="mt-1.5 text-[11px] text-slate-400 text-right truncate">—— {{ hitokoto.from }}</div>
+          </div>
+
+          <!-- Todo Widget -->
+          <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold">📝 待办便签</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">{{ pendingTodoCount }} 待办</span>
+            </div>
+            <ul class="mt-2 space-y-1.5 flex-1">
+              <li v-for="todo in visibleTodos" :key="todo.id" class="group flex items-center gap-1.5 text-xs">
+                <input type="checkbox" :checked="todo.done" class="accent-indigo-500 shrink-0 cursor-pointer" @change="toggleTodo(todo.id)" />
+                <span class="flex-1 truncate" :class="todo.done ? 'line-through text-slate-500' : ''">{{ todo.text }}</span>
+                <button type="button" class="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition shrink-0" title="删除" @click="removeTodo(todo.id)">✕</button>
+              </li>
+              <li v-if="todos.length === 0" class="text-[11px] text-slate-500">暂无待办，添加一条吧</li>
+              <li v-else-if="todos.length > 4" class="text-[11px] text-slate-500">还有 {{ todos.length - 4 }} 条…</li>
+            </ul>
+            <form class="mt-2" @submit.prevent="addTodo">
+              <input
+                v-model="newTodoText"
+                type="text"
+                placeholder="写点什么，回车添加"
+                class="w-full px-2.5 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-xs outline-none focus:border-indigo-500"
+              />
+            </form>
+          </div>
+
+          <!-- Countdown Widget -->
+          <div class="relative">
+            <div
+              class="glass-card rounded-2xl px-4 py-3 h-full flex flex-col cursor-pointer"
+              title="点击设置倒计时"
+              @click.stop="toggleCountdownPicker"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold">⏳ 倒计时</span>
+                <span class="text-[10px] text-slate-400">{{ countdown.date }}</span>
+              </div>
+              <div class="mt-1.5 flex items-baseline gap-1">
+                <span class="text-3xl font-extrabold text-indigo-400">{{ countdownDaysAbs }}</span>
+                <span class="text-xs text-slate-400">天</span>
+              </div>
+              <div class="mt-0.5 text-[11px] text-slate-400 truncate">{{ countdownStatusText }}</div>
+            </div>
+
+            <!-- Countdown Settings Popover -->
+            <div
+              v-if="showCountdownPicker"
+              class="absolute right-0 left-0 sm:left-auto mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+              @click.stop
+            >
+              <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+                <span class="text-xs font-bold text-slate-200">⏳ 倒计时设置</span>
+                <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showCountdownPicker = false">✕</button>
+              </div>
+              <form class="space-y-2" @submit.prevent="saveCountdown">
+                <input
+                  v-model="countdownDraft.name"
+                  type="text"
+                  placeholder="事件名称（如：春节、考试、旅行）"
+                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                />
+                <input
+                  v-model="countdownDraft.date"
+                  type="date"
+                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                />
+                <button type="submit" class="w-full px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">保存</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
         <!-- Sub-menu Capsule Filter Bar (Supports Red Cross Delete in Edit Mode) -->
         <div
           v-if="activeMenu && activeMenu.subMenus && activeMenu.subMenus.length > 0 && !isGlobalFiltering"
@@ -976,7 +1065,122 @@ function updateClock() {
   else if (hour < 12) greetingText.value = '早安，开启高效一天';
   else if (hour < 18) greetingText.value = '午后好，保持专注';
   else greetingText.value = '晚上好，享受静谧时光';
+
+  refreshCountdown();
 }
+
+// ===== 首页小组件：一言 / 待办便签 / 倒计时（数据存浏览器本地，风格与天气卡片一致）=====
+const hitokoto = ref({ text: '正在加载一言…', from: '' });
+const hitokotoLoading = ref(false);
+const fallbackQuotes = [
+  { text: '山重水复疑无路，柳暗花明又一村。', from: '陆游《游山西村》' },
+  { text: '路漫漫其修远兮，吾将上下而求索。', from: '屈原《离骚》' },
+  { text: '不积跬步，无以至千里。', from: '《荀子·劝学》' },
+  { text: '纸上得来终觉浅，绝知此事要躬行。', from: '陆游《冬夜读书示子聿》' }
+];
+
+async function fetchHitokoto() {
+  if (hitokotoLoading.value) return;
+  hitokotoLoading.value = true;
+  try {
+    const res = await fetch('https://v1.hitokoto.cn/?c=d&c=i&c=k&encode=json');
+    const data = await res.json();
+    if (data && data.hitokoto) {
+      hitokoto.value = { text: data.hitokoto, from: data.from_who || data.from || '佚名' };
+      localStorage.setItem('nav_hitokoto', JSON.stringify(hitokoto.value));
+      return;
+    }
+    throw new Error('bad response');
+  } catch (e) {
+    hitokoto.value = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+  } finally {
+    hitokotoLoading.value = false;
+  }
+}
+
+const todos = ref([]);
+const newTodoText = ref('');
+
+function loadTodos() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem('nav_todos') || '[]');
+    if (Array.isArray(parsed)) todos.value = parsed;
+  } catch (e) {}
+}
+
+function saveTodos() {
+  localStorage.setItem('nav_todos', JSON.stringify(todos.value));
+}
+
+function addTodo() {
+  const text = newTodoText.value.trim();
+  if (!text) return;
+  todos.value.unshift({ id: Date.now(), text, done: false });
+  newTodoText.value = '';
+  saveTodos();
+}
+
+function toggleTodo(id) {
+  const item = todos.value.find(t => t.id === id);
+  if (item) {
+    item.done = !item.done;
+    saveTodos();
+  }
+}
+
+function removeTodo(id) {
+  todos.value = todos.value.filter(t => t.id !== id);
+  saveTodos();
+}
+
+const pendingTodoCount = computed(() => todos.value.filter(t => !t.done).length);
+const visibleTodos = computed(() => [...todos.value].sort((a, b) => Number(a.done) - Number(b.done)).slice(0, 4));
+
+const countdown = ref({ name: '元旦', date: `${new Date().getFullYear() + 1}-01-01` });
+const countdownDraft = ref({ name: '', date: '' });
+const showCountdownPicker = ref(false);
+const countdownDays = ref(0);
+
+function refreshCountdown() {
+  const target = new Date(countdown.value.date + 'T00:00:00');
+  if (isNaN(target.getTime())) {
+    countdownDays.value = 0;
+    return;
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  countdownDays.value = Math.round((target - today) / 86400000);
+}
+
+function loadCountdown() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nav_countdown') || 'null');
+    if (saved && saved.name && saved.date) countdown.value = saved;
+  } catch (e) {}
+  refreshCountdown();
+}
+
+function toggleCountdownPicker() {
+  countdownDraft.value = { ...countdown.value };
+  showCountdownPicker.value = !showCountdownPicker.value;
+}
+
+function saveCountdown() {
+  const name = countdownDraft.value.name.trim();
+  if (!name || !countdownDraft.value.date) return;
+  countdown.value = { name, date: countdownDraft.value.date };
+  localStorage.setItem('nav_countdown', JSON.stringify(countdown.value));
+  refreshCountdown();
+  showCountdownPicker.value = false;
+  showToast(`倒计时已设为「${name}」`);
+}
+
+const countdownDaysAbs = computed(() => Math.abs(countdownDays.value));
+const countdownStatusText = computed(() => {
+  if (countdownDays.value > 0) return `距离「${countdown.value.name}」`;
+  if (countdownDays.value === 0) return `「${countdown.value.name}」就是今天 🎉`;
+  return `「${countdown.value.name}」已过`;
+});
 
 const customBgStyle = computed(() => {
   if (theme.value === 'light' && (!activeBg.value || activeBg.value.id === 1)) {
@@ -1020,6 +1224,15 @@ onMounted(async () => {
   updateClock();
   clockTimer = setInterval(updateClock, 15000);
   window.addEventListener('keydown', handleGlobalKeydown);
+
+  // 首页小组件初始化：一言（先用缓存再拉新）、待办、倒计时
+  try {
+    const cachedQuote = JSON.parse(localStorage.getItem('nav_hitokoto') || 'null');
+    if (cachedQuote && cachedQuote.text) hitokoto.value = cachedQuote;
+  } catch (e) {}
+  fetchHitokoto();
+  loadTodos();
+  loadCountdown();
 
   try {
     const savedCity = localStorage.getItem('nav_weather_city');

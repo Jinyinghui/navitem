@@ -7,6 +7,8 @@ const cardRoutes = require('./routes/card');
 const uploadRoutes = require('./routes/upload');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const backgroundRoutes = require('./routes/background');
+const searchEngineRoutes = require('./routes/searchEngine');
 const compression = require('compression');
 const app = express();
 
@@ -36,6 +38,8 @@ app.use('/api/cards', cardRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/backgrounds', backgroundRoutes);
+app.use('/api/search-engines', searchEngineRoutes);
 
 app.listen(PORT, () => {
   console.log(`server is running at http://localhost:${PORT}`);

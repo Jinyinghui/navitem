@@ -586,6 +586,19 @@
               <p class="text-xs text-slate-400 truncate mt-0.5">{{ card.desc || getHostname(card.url) }}</p>
             </div>
           </a>
+
+          <!-- Edit Mode: Add Card Tile -->
+          <button
+            v-if="isEditMode && !isGlobalFiltering"
+            type="button"
+            class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-indigo-400 transition min-h-[76px]"
+            style="border: 1.5px dashed rgba(100, 116, 139, 0.45)"
+            title="在此分类新增卡片"
+            @click="openQuickCardEditModal(null, 'title', true)"
+          >
+            <span class="text-2xl leading-none">➕</span>
+            <span class="text-xs font-medium">新增卡片</span>
+          </button>
         </div>
       </main>
 

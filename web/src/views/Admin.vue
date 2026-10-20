@@ -16,11 +16,11 @@
         <form class="space-y-4" @submit.prevent="handleLogin">
           <div>
             <label class="block text-xs font-medium text-slate-400 mb-1.5">管理员账号</label>
-            <input v-model="username" type="text" placeholder="请输入管理员账号 (默认 admin)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none" />
+            <input v-model="username" type="text" placeholder="请输入管理员账号" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none" />
           </div>
           <div>
             <label class="block text-xs font-medium text-slate-400 mb-1.5">登录密码</label>
-            <input v-model="password" type="password" placeholder="请输入密码 (默认 123456)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none" />
+            <input v-model="password" type="password" placeholder="请输入密码" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none" />
           </div>
           <p v-if="loginError" class="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 text-center">{{ loginError }}</p>
           <div class="flex gap-3 pt-2">
@@ -177,8 +177,8 @@ const navItems = [
 
 const page = ref('welcome');
 const isLoggedIn = ref(false);
-const username = ref('admin');
-const password = ref('123456');
+const username = ref('');
+const password = ref('');
 const loading = ref(false);
 const loginError = ref('');
 

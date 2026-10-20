@@ -532,11 +532,12 @@
             :href="card.url"
             target="_blank"
             rel="noopener noreferrer"
-            draggable="true"
-            title="按住可拖拽调整卡片位置"
+            :draggable="isEditMode"
+            :title="isEditMode ? '按住可拖拽调整卡片位置' : ''"
             :style="{ animationDelay: `${Math.min(idx * 0.02, 0.35)}s` }"
             :class="[
-              'relative glass-card card-anim rounded-2xl p-4 group cursor-grab active:cursor-grabbing select-none',
+              'relative glass-card card-anim rounded-2xl p-4 group select-none',
+              isEditMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
               viewMode === 'compact' ? 'flex flex-col items-center justify-center text-center gap-2.5' : 'flex items-center gap-3.5',
               isEditMode ? 'edit-mode-item' : '',
               draggedCardId === card.id ? 'is-dragging' : '',
@@ -613,7 +614,8 @@ import {
   reorderCards,
   uploadLogo,
   getActiveBackground,
-  getSearchEngines
+  getSearchEngines,
+  getCurrentUser
 } from '../api';
 import {
   DEFAULT_BACKGROUNDS,
@@ -792,17 +794,18 @@ async function submitQuickMenuRename() {
 }
 
 function openCardContextMenu(e, card) {
+  if (!isEditMode.value) return;
   showContextMenuAt(e.clientX, e.clientY, `卡片：${card.title}`, [
     { icon: '✏️', label: '重命名标题', action: () => openQuickCardEditModal(card, 'title', false) },
     { icon: '🔗', label: '修改目标链接', action: () => openQuickCardEditModal(card, 'url', false) },
     { icon: '🖼️', label: '修改/上传图标', action: () => openQuickCardEditModal(card, 'logo', false) },
     { icon: '📝', label: '编辑描述与详情', action: () => openQuickCardEditModal(card, 'desc', false) },
-    { icon: '↗️', label: '新窗口打开链接', action: () => window.open(card.url, '_blank', 'noopener,noreferrer') },
-    { icon: '🗑️', label: '删除此卡片', danger: true, action: () => handleQuickDeleteCard(card) }
+    { icon: '↗️', label: '新窗口打开链接', action: () => window.open(card.url, '_blank', 'noopener,noreferrer') }
   ]);
 }
 
 function openMenuContextMenu(e, menu) {
+  if (!isEditMode.value) return;
   showContextMenuAt(e.clientX, e.clientY, `菜单：${menu.name}`, [
     { icon: '✏️', label: '重命名菜单', action: () => openQuickMenuRename('menu', menu) },
     {
@@ -819,6 +822,7 @@ function openMenuContextMenu(e, menu) {
 }
 
 function openSubMenuContextMenu(e, sub) {
+  if (!isEditMode.value) return;
   showContextMenuAt(e.clientX, e.clientY, `子菜单：${sub.name}`, [
     { icon: '✏️', label: '重命名子菜单', action: () => openQuickMenuRename('sub', sub) },
     {
@@ -856,9 +860,39 @@ function handleToggleTheme() {
   showToast(names[next]);
 }
 
-function toggleEditMode() {
-  isEditMode.value = !isEditMode.value;
-  showToast(isEditMode.value ? '已进入快捷编辑模式：点击任意菜单或卡片右上角红叉 ✕ 即可删除' : '已退出快捷编辑模式');
+// 本地先看 token 是否存在且未过期，再向服务端复核（改密后旧 token 会被服务端作废）
+function hasValidLocalToken() {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return !payload.exp || payload.exp * 1000 > Date.now();
+  } catch (e) {
+    return false;
+  }
+}
+
+async function toggleEditMode() {
+  if (isEditMode.value) {
+    isEditMode.value = false;
+    showToast('已退出快捷编辑模式');
+    return;
+  }
+  if (!hasValidLocalToken()) {
+    showToast('请先登录后再使用编辑模式');
+    router.push('/admin');
+    return;
+  }
+  try {
+    await getCurrentUser();
+  } catch (e) {
+    localStorage.removeItem('token');
+    showToast('登录已过期，请重新登录');
+    router.push('/admin');
+    return;
+  }
+  isEditMode.value = true;
+  showToast('已进入快捷编辑模式：可拖拽排序、右键快捷操作，点卡片右上角红叉 ✕ 删除');
 }
 
 async function handleQuickDeleteMenu(menu) {
@@ -913,6 +947,10 @@ function onCardClick(e) {
 }
 
 function onCardDragStart(e, card) {
+  if (!isEditMode.value) {
+    e.preventDefault();
+    return;
+  }
   draggedCardId.value = card.id;
   justDraggedCard = true;
   e.dataTransfer.effectAllowed = 'move';

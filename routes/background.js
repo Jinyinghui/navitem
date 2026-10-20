@@ -24,7 +24,7 @@ router.get('/active', (req, res) => {
 });
 
 // 新增自定义背景
-router.post('/', (req, res) => {
+router.post('/', auth, (req, res) => {
   const { name, type, value, blur, overlay_opacity, is_active, order } = req.body;
   if (!name || !value) {
     return res.status(400).json({ error: '背景名称和背景值不能为空' });
@@ -53,7 +53,7 @@ router.post('/', (req, res) => {
 });
 
 // 设为当前启用背景
-router.put('/:id/activate', (req, res) => {
+router.put('/:id/activate', auth, (req, res) => {
   const targetId = req.params.id;
   db.serialize(() => {
     db.run('UPDATE backgrounds SET is_active = 0');
@@ -65,7 +65,7 @@ router.put('/:id/activate', (req, res) => {
 });
 
 // 更新背景配置（名称、模糊度、遮罩浓度等）
-router.put('/:id', (req, res) => {
+router.put('/:id', auth, (req, res) => {
   const { name, type, value, blur, overlay_opacity, order } = req.body;
   db.run(
     'UPDATE backgrounds SET name = ?, type = ?, value = ?, blur = ?, overlay_opacity = ?, "order" = ? WHERE id = ?',
@@ -78,7 +78,7 @@ router.put('/:id', (req, res) => {
 });
 
 // 删除背景
-router.delete('/:id', (req, res) => {
+router.delete('/:id', auth, (req, res) => {
   const id = req.params.id;
   db.get('SELECT is_active FROM backgrounds WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });

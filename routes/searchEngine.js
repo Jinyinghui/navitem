@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
 });
 
 // 批量拖拽排序
-router.put('/reorder', (req, res) => {
+router.put('/reorder', auth, (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: '无效的排序数据' });
@@ -38,7 +38,7 @@ router.put('/reorder', (req, res) => {
 });
 
 // 设为默认搜索引擎
-router.put('/:id/default', (req, res) => {
+router.put('/:id/default', auth, (req, res) => {
   const targetId = req.params.id;
   db.serialize(() => {
     db.run('UPDATE search_engines SET is_default = 0');
@@ -50,7 +50,7 @@ router.put('/:id/default', (req, res) => {
 });
 
 // 新增自定义搜索引擎
-router.post('/', (req, res) => {
+router.post('/', auth, (req, res) => {
   const { name, label, url_template, placeholder, is_default, order } = req.body;
   if (!label || !url_template) {
     return res.status(400).json({ error: '搜索引擎名称和搜索地址不能为空' });
@@ -77,7 +77,7 @@ router.post('/', (req, res) => {
 });
 
 // 修改搜索引擎配置
-router.put('/:id', (req, res) => {
+router.put('/:id', auth, (req, res) => {
   const { label, url_template, placeholder, order } = req.body;
   db.run(
     'UPDATE search_engines SET label = ?, url_template = ?, placeholder = ?, "order" = ? WHERE id = ?',
@@ -90,7 +90,7 @@ router.put('/:id', (req, res) => {
 });
 
 // 删除搜索引擎
-router.delete('/:id', (req, res) => {
+router.delete('/:id', auth, (req, res) => {
   const id = req.params.id;
   db.get('SELECT is_default FROM search_engines WHERE id = ?', [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });

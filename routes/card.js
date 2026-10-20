@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('./authMiddleware');
+const { fetchAndStoreIcon } = require('../utils/fetchIcon');
 const router = express.Router();
 
 function formatCardLogo(card) {
@@ -21,7 +22,7 @@ router.get('/', (req, res) => {
 });
 
 // 批量拖拽更新卡片排序（需放在 /:id 之前）
-router.put('/reorder', (req, res) => {
+router.put('/reorder', auth, (req, res) => {
   const { items } = req.body;
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: '无效的排序数据' });
@@ -65,12 +66,25 @@ router.get('/:menuId', (req, res) => {
   });
 });
 
+// 按网址抓取站点图标存到本地（需认证）
+router.post('/fetch-icon', auth, async (req, res) => {
+  try {
+    const result = await fetchAndStoreIcon(req.body.url);
+    res.json({ ...result, display_logo: '/uploads/' + result.custom_logo_path });
+  } catch (e) {
+    res.status(422).json({ error: e.message });
+  }
+});
 // 新增、修改、删除卡片需认证
-router.post('/', (req, res) => {
+router.post('/', auth, async (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
+  let finalCustomLogoPath = custom_logo_path || '';
+  if (!logo_url && !finalCustomLogoPath && url) {
+    try { finalCustomLogoPath = (await fetchAndStoreIcon(url)).custom_logo_path; } catch { /* 抓取失败不阻塞保存，显示层有 favicon 兜底 */ }
+  }
   db.run(
     'INSERT INTO cards (menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, "order") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', custom_logo_path || '', desc || '', order || 0],
+    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', finalCustomLogoPath, desc || '', order || 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
@@ -78,11 +92,15 @@ router.post('/', (req, res) => {
   );
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', auth, async (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
+  let finalCustomLogoPath = custom_logo_path || '';
+  if (!logo_url && !finalCustomLogoPath && url) {
+    try { finalCustomLogoPath = (await fetchAndStoreIcon(url)).custom_logo_path; } catch { /* 抓取失败不阻塞保存，显示层有 favicon 兜底 */ }
+  }
   db.run(
     'UPDATE cards SET menu_id=?, sub_menu_id=?, title=?, url=?, logo_url=?, custom_logo_path=?, desc=?, "order"=? WHERE id=?',
-    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', custom_logo_path || '', desc || '', order || 0, req.params.id],
+    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', finalCustomLogoPath, desc || '', order || 0, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ changed: this.changes });
@@ -90,7 +108,7 @@ router.put('/:id', (req, res) => {
   );
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', auth, (req, res) => {
   db.run('DELETE FROM cards WHERE id=?', [req.params.id], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ deleted: this.changes });

@@ -22,7 +22,11 @@
         <input v-model="newTitle" type="text" placeholder="卡片标题 *" required class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
         <input v-model="newUrl" type="url" placeholder="目标网址 https://... *" required class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
         <input v-model="newDesc" type="text" placeholder="简短描述（可选）" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
-        <input v-model="newLogo" type="text" placeholder="自定义图标 URL（可选）" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+        <div class="flex items-center gap-1.5">
+          <input v-model="newLogo" type="text" placeholder="图标 URL（留空保存时自动抓取）" class="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" @input="fetchedIconPath = ''" />
+          <img v-if="fetchedIconPath" :src="'/uploads/' + fetchedIconPath" alt="icon" class="w-6 h-6 rounded-md shrink-0" />
+          <button type="button" :disabled="iconFetching || !newUrl.trim()" @click="handleFetchIcon" class="shrink-0 px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-medium transition">{{ iconFetching ? '抓取中…' : '抓取图标' }}</button>
+        </div>
         <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">+ 添加导航卡片</button>
       </form>
     </div>
@@ -105,7 +109,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards } from '../../api';
+import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards, fetchCardIcon } from '../../api';
 
 const menus = ref([]);
 const cards = ref([]);
@@ -117,6 +121,21 @@ const newTitle = ref('');
 const newUrl = ref('');
 const newDesc = ref('');
 const newLogo = ref('');
+const fetchedIconPath = ref('');
+const iconFetching = ref(false);
+
+async function handleFetchIcon() {
+  if (!newUrl.value.trim()) return;
+  iconFetching.value = true;
+  try {
+    const res = await fetchCardIcon(newUrl.value.trim());
+    fetchedIconPath.value = res.data.custom_logo_path;
+  } catch (e) {
+    alert(e.response?.data?.error || '图标抓取失败');
+  } finally {
+    iconFetching.value = false;
+  }
+}
 const dragIdx = ref(null);
 const dragHandleIdx = ref(null);
 
@@ -171,12 +190,14 @@ async function handleAddCard() {
     url: newUrl.value.trim(),
     desc: newDesc.value.trim(),
     logo_url: newLogo.value.trim(),
+    custom_logo_path: newLogo.value.trim() ? '' : fetchedIconPath.value,
     order: cards.value.length + 1
   });
   newTitle.value = '';
   newUrl.value = '';
   newDesc.value = '';
   newLogo.value = '';
+  fetchedIconPath.value = '';
   await loadCards();
 }
 

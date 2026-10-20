@@ -142,5 +142,5 @@ SELECT 'github', 'GitHub', 'https://github.com/search?q={q}&type=repositories', 
 WHERE (SELECT COUNT(*) FROM search_engines) = 4;
 
 INSERT INTO search_engines (name, label, url_template, placeholder, is_default, "order")
-SELECT 'searxng', 'SearXNG', 'https://searxng.553423.xyz/search?q={q}', '使用 SearXNG 隐私元搜索...', 0, 6
+SELECT 'searxng', 'SearXNG', 'https://searxng.hueiyao.com/search?q={q}', '使用 SearXNG 隐私元搜索...', 0, 6
 WHERE (SELECT COUNT(*) FROM search_engines) = 5;

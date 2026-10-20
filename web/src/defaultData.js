@@ -54,7 +54,7 @@ export const DEFAULT_SEARCH_ENGINES = [
   { id: 3, name: 'bing', label: 'Bing', url_template: 'https://www.bing.com/search?q={q}', placeholder: '使用 Microsoft Bing 搜索...', is_default: 0, order: 3 },
   { id: 4, name: 'baidu', label: '百度', url_template: 'https://www.baidu.com/s?wd={q}', placeholder: '使用百度搜索中文网页...', is_default: 0, order: 4 },
   { id: 5, name: 'github', label: 'GitHub', url_template: 'https://github.com/search?q={q}&type=repositories', placeholder: '在 GitHub 中搜索开源项目...', is_default: 0, order: 5 },
-  { id: 6, name: 'searxng', label: 'SearXNG', url_template: 'https://searxng.553423.xyz/search?q={q}', placeholder: '使用 SearXNG 隐私元搜索...', is_default: 0, order: 6 }
+  { id: 6, name: 'searxng', label: 'SearXNG', url_template: 'https://searxng.hueiyao.com/search?q={q}', placeholder: '使用 SearXNG 隐私元搜索...', is_default: 0, order: 6 }
 ];
 
 export const PRESET_WEATHER_CITIES = [

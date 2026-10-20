@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-screen flex flex-col" @click="ctxMenu.visible = false">
+  <div class="relative min-h-screen flex flex-col">
     <!-- Dynamic Switchable Background Layer -->
     <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-500" :style="customBgStyle" aria-hidden="true"></div>
     <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-300" :style="customOverlayStyle" aria-hidden="true"></div>
@@ -7,30 +7,6 @@
     <!-- Single Toast Notification -->
     <div v-if="toastMsg" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold bg-indigo-600 text-white border-indigo-400">
       {{ toastMsg }}
-    </div>
-
-    <!-- Right-Click Context Menu -->
-    <div
-      v-if="ctxMenu.visible"
-      id="portalContextMenu"
-      class="fixed z-50 w-56 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-1.5 shadow-2xl text-slate-100 backdrop-blur-xl select-none"
-      :style="{ left: `${ctxMenu.x}px`, top: `${ctxMenu.y}px` }"
-      @click.stop
-    >
-      <div class="px-3 py-2 text-[11px] font-bold text-slate-400 border-b border-slate-800 truncate">{{ ctxMenu.header }}</div>
-      <div class="py-1 space-y-0.5 text-xs">
-        <button
-          v-for="(item, idx) in ctxMenu.items"
-          :key="idx"
-          type="button"
-          class="ctx-menu-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition"
-          :class="item.danger ? 'text-rose-400 hover:bg-rose-500/15' : 'hover:bg-slate-800/80'"
-          @click="runCtxAction(item)"
-        >
-          <span class="text-sm leading-none">{{ item.icon }}</span>
-          <span class="font-medium">{{ item.label }}</span>
-        </button>
-      </div>
     </div>
 
     <!-- Quick Edit Card Modal (Rename / Edit URL / Edit Icon / Add Card) -->
@@ -154,7 +130,6 @@
                   isEditMode ? 'edit-mode-item' : ''
                 ]"
                 @click="selectMenu(menu)"
-                @contextmenu.prevent.stop="openMenuContextMenu($event, menu)"
               >
                 {{ menu.name }}
                 <span v-if="menu.subMenus && menu.subMenus.length > 0" class="ml-1 text-[10px] opacity-75">▾</span>
@@ -518,7 +493,6 @@
                 isEditMode ? 'edit-mode-item' : ''
               ]"
               @click="selectSubMenu(sub)"
-              @contextmenu.prevent.stop="openSubMenuContextMenu($event, sub)"
             >
               {{ sub.name }}
             </button>
@@ -571,8 +545,7 @@
               draggedCardId === card.id ? 'is-dragging' : '',
               dragOverCardId === card.id && draggedCardId !== card.id ? 'is-drag-over' : ''
             ]"
-            @click="onCardClick($event)"
-            @contextmenu.prevent.stop="openCardContextMenu($event, card)"
+            @click="onCardClick($event, card)"
             @dragstart="onCardDragStart($event, card)"
             @dragover.prevent="onCardDragOver($event, card)"
             @dragleave="onCardDragLeave(card)"
@@ -698,7 +671,6 @@ function showToast(msg) {
 }
 
 // Right-Click Context Menu & Quick Edit Modals State
-const ctxMenu = ref({ visible: false, x: 0, y: 0, header: '', items: [] });
 const quickCardModal = ref({
   visible: false,
   isNew: false,
@@ -716,23 +688,6 @@ const qeTitleRef = ref(null);
 const qeUrlRef = ref(null);
 const qeLogoRef = ref(null);
 const qeDescRef = ref(null);
-
-function showContextMenuAt(x, y, header, items) {
-  const left = Math.min(x, window.innerWidth - 236);
-  const top = Math.min(y, window.innerHeight - 240);
-  ctxMenu.value = {
-    visible: true,
-    x: Math.max(8, left),
-    y: Math.max(8, top),
-    header,
-    items
-  };
-}
-
-function runCtxAction(item) {
-  ctxMenu.value.visible = false;
-  if (item && typeof item.action === 'function') item.action();
-}
 
 function openQuickCardEditModal(card, focusField = 'title', isNew = false) {
   quickCardModal.value = {
@@ -835,50 +790,6 @@ async function submitQuickMenuRename() {
   showToast(`已重命名为「${newName}」`);
 }
 
-function openCardContextMenu(e, card) {
-  if (!isEditMode.value) return;
-  showContextMenuAt(e.clientX, e.clientY, `卡片：${card.title}`, [
-    { icon: '✏️', label: '重命名标题', action: () => openQuickCardEditModal(card, 'title', false) },
-    { icon: '🔗', label: '修改目标链接', action: () => openQuickCardEditModal(card, 'url', false) },
-    { icon: '🖼️', label: '修改/上传图标', action: () => openQuickCardEditModal(card, 'logo', false) },
-    { icon: '📝', label: '编辑描述与详情', action: () => openQuickCardEditModal(card, 'desc', false) },
-    { icon: '↗️', label: '新窗口打开链接', action: () => window.open(card.url, '_blank', 'noopener,noreferrer') }
-  ]);
-}
-
-function openMenuContextMenu(e, menu) {
-  if (!isEditMode.value) return;
-  showContextMenuAt(e.clientX, e.clientY, `菜单：${menu.name}`, [
-    { icon: '✏️', label: '重命名菜单', action: () => openQuickMenuRename('menu', menu) },
-    {
-      icon: '➕',
-      label: '在此菜单新增卡片',
-      action: () => {
-        activeMenu.value = menu;
-        activeSubMenu.value = null;
-        openQuickCardEditModal(null, 'title', true);
-      }
-    },
-    { icon: '🗑️', label: '删除该菜单', danger: true, action: () => handleQuickDeleteMenu(menu) }
-  ]);
-}
-
-function openSubMenuContextMenu(e, sub) {
-  if (!isEditMode.value) return;
-  showContextMenuAt(e.clientX, e.clientY, `子菜单：${sub.name}`, [
-    { icon: '✏️', label: '重命名子菜单', action: () => openQuickMenuRename('sub', sub) },
-    {
-      icon: '➕',
-      label: '在此子菜单新增卡片',
-      action: () => {
-        activeSubMenu.value = sub;
-        openQuickCardEditModal(null, 'title', true);
-      }
-    },
-    { icon: '🗑️', label: '删除该子菜单', danger: true, action: () => handleQuickDeleteSubMenu(sub) }
-  ]);
-}
-
 // Theme state
 const theme = effectiveTheme;
 const themeModeLabel = computed(() => {
@@ -916,7 +827,7 @@ function hasValidLocalToken() {
 
 function enterEditMode() {
   isEditMode.value = true;
-  showToast('已进入快捷编辑模式：可拖拽排序、右键快捷操作，点卡片右上角红叉 ✕ 删除');
+  showToast('已进入快捷编辑模式：单击卡片直接修改，拖拽排序，点卡片右上角红叉 ✕ 删除');
 }
 
 async function toggleEditMode() {
@@ -1006,10 +917,16 @@ const draggedCardId = ref(null);
 const dragOverCardId = ref(null);
 let justDraggedCard = false;
 
-function onCardClick(e) {
+function onCardClick(e, card) {
   if (justDraggedCard) {
     e.preventDefault();
     e.stopPropagation();
+    return;
+  }
+  // 编辑模式下单击卡片直接打开修改弹窗（不跳转网站）
+  if (isEditMode.value) {
+    e.preventDefault();
+    openQuickCardEditModal(card, 'title', false);
   }
 }
 

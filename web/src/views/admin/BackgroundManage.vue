@@ -12,9 +12,45 @@
       </button>
     </div>
 
+    <!-- Active Background Tuning Panel -->
+    <div v-if="activeBg" class="tune-card">
+      <div class="tune-info">
+        <div class="tune-preview" :style="getPreviewStyle(activeBg)">
+          <div class="tune-preview-overlay" :style="{ background: `rgba(11, 17, 32, ${(activeBg.overlay_opacity ?? 20) / 100})` }"></div>
+          <span class="preview-label">当前使用中</span>
+        </div>
+        <div class="tune-text">
+          <div class="tune-name">{{ activeBg.name }}</div>
+          <div class="tune-sub">{{ activeBg.type === 'gradient' ? '渐变色' : '图片' }} · 拖动滑杆实时微调，松开即自动保存</div>
+        </div>
+      </div>
+      <div class="tune-sliders">
+        <div class="tune-row">
+          <label>模糊程度 <span class="tune-val">{{ activeBg.blur ?? 0 }}px</span></label>
+          <input
+            type="range" min="0" max="20" step="1"
+            :value="activeBg.blur ?? 0"
+            @input="onTuneInput('blur', $event.target.value)"
+            @change="persistTune()"
+            class="tune-slider"
+          />
+        </div>
+        <div class="tune-row">
+          <label>遮罩透明度 <span class="tune-val">{{ activeBg.overlay_opacity ?? 20 }}%</span></label>
+          <input
+            type="range" min="0" max="85" step="1"
+            :value="activeBg.overlay_opacity ?? 20"
+            @input="onTuneInput('overlay_opacity', $event.target.value)"
+            @change="persistTune()"
+            class="tune-slider"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- Add Form -->
     <div v-if="showAddForm" class="add-form-card">
-      <h3 class="form-title">新增背景</h3>
+      <h3 class="form-title">新增背景 <span class="form-title-hint">（新增后将自动启用）</span></h3>
       <form class="add-form" @submit.prevent="addBackground">
         <div class="form-row">
           <div class="form-group">
@@ -23,7 +59,7 @@
           </div>
           <div class="form-group">
             <label>背景类型 *</label>
-            <select v-model="newBg.type" class="form-input form-select">
+            <select v-model="newBg.type" class="form-input form-select" @change="onTypeChange">
               <option value="gradient">渐变色</option>
               <option value="image">图片</option>
             </select>
@@ -32,6 +68,11 @@
         <div class="form-group">
           <label>背景值 *</label>
           <input v-model="newBg.value" :placeholder="newBg.type === 'gradient' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'https://example.com/bg.jpg'" class="form-input font-mono" required />
+        </div>
+        <div v-if="newBg.type === 'image'" class="form-group">
+          <label>或选择本地图片</label>
+          <input ref="bgFileInput" type="file" accept="image/*" class="form-input form-file" @change="onBgFileChange" />
+          <span class="label-hint">选择后自动填入背景值并补全名称</span>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -56,10 +97,10 @@
         <thead>
           <tr>
             <th style="width: 80px;">排序</th>
-            <th style="width: 20%;">名称</th>
-            <th style="width: 35%;">预览</th>
+            <th style="width: 18%;">名称</th>
+            <th style="width: 30%;">预览</th>
             <th style="width: 100px; text-align: center;">状态</th>
-            <th style="width: 120px; text-align: center;">微调</th>
+            <th style="width: 110px; text-align: center;">微调</th>
             <th style="width: 70px; text-align: center;">删除</th>
           </tr>
         </thead>
@@ -91,8 +132,10 @@
             </td>
             <td>
               <div class="bg-preview" :style="getPreviewStyle(bg)">
+                <div class="tune-preview-overlay" :style="{ background: `rgba(11, 17, 32, ${(bg.overlay_opacity ?? 20) / 100})` }"></div>
                 <span class="preview-label">{{ bg.type === 'gradient' ? '渐变色' : '图片' }}</span>
               </div>
+              <div class="preview-meta">模糊 {{ bg.blur ?? 0 }}px · 遮罩 {{ bg.overlay_opacity ?? 20 }}%</div>
             </td>
             <td style="text-align: center;">
               <button
@@ -110,7 +153,7 @@
               </div>
             </td>
             <td style="text-align: center;">
-              <button type="button" class="btn-delete" @click="deleteBackground(bg)">删除</button>
+              <button type="button" class="btn-delete" :disabled="backgrounds.length <= 1" @click="deleteBackground(bg)">删除</button>
             </td>
           </tr>
           <tr v-if="backgrounds.length === 0">
@@ -123,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   getBackgrounds,
   addBackground as apiAddBackground,
@@ -135,10 +178,13 @@ import {
 
 const backgrounds = ref([]);
 const showAddForm = ref(false);
-const newBg = ref({ name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 30 });
+const newBg = ref({ name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 20 });
+const bgFileInput = ref(null);
 
 const dragBgIndex = ref(null);
 const dragOverBgIndex = ref(null);
+
+const activeBg = computed(() => backgrounds.value.find(b => b.is_active === 1) || null);
 
 onMounted(() => {
   loadBackgrounds();
@@ -150,7 +196,35 @@ async function loadBackgrounds() {
 }
 
 function resetForm() {
-  newBg.value = { name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 30 };
+  newBg.value = { name: '', type: 'gradient', value: '', blur: 0, overlay_opacity: 20 };
+  if (bgFileInput.value) bgFileInput.value.value = '';
+}
+
+// 切换类型时按类型给模糊/遮罩默认值（与静态页面一致：图片 2/35，渐变 0/20）
+function onTypeChange() {
+  if (newBg.value.type === 'image') {
+    newBg.value.blur = 2;
+    newBg.value.overlay_opacity = 35;
+  } else {
+    newBg.value.blur = 0;
+    newBg.value.overlay_opacity = 20;
+  }
+}
+
+function onBgFileChange(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    newBg.value.type = 'image';
+    newBg.value.value = reader.result;
+    newBg.value.blur = 2;
+    newBg.value.overlay_opacity = 35;
+    if (!newBg.value.name.trim()) {
+      newBg.value.name = file.name.replace(/\.[^.]+$/, '');
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 function getPreviewStyle(bg) {
@@ -167,7 +241,8 @@ async function addBackground() {
     type: newBg.value.type,
     value: newBg.value.value,
     blur: newBg.value.blur ?? 0,
-    overlay_opacity: newBg.value.overlay_opacity ?? 30
+    overlay_opacity: newBg.value.overlay_opacity ?? 20,
+    is_active: 1
   });
   showAddForm.value = false;
   resetForm();
@@ -177,7 +252,22 @@ async function addBackground() {
 async function updateBackground(bg) {
   await apiUpdateBackground(bg.id, {
     name: bg.name,
-    value: bg.value
+    type: bg.type,
+    value: bg.value,
+    blur: bg.blur,
+    overlay_opacity: bg.overlay_opacity
+  });
+}
+
+// 微调滑杆：拖动时只更新本地即时预览，松开（change）时再落库
+function onTuneInput(field, val) {
+  if (activeBg.value) activeBg.value[field] = Number(val);
+}
+async function persistTune() {
+  if (!activeBg.value) return;
+  await apiUpdateBackground(activeBg.value.id, {
+    blur: activeBg.value.blur ?? 0,
+    overlay_opacity: activeBg.value.overlay_opacity ?? 20
   });
 }
 
@@ -189,6 +279,7 @@ async function activateBackground(bg) {
 }
 
 async function deleteBackground(bg) {
+  if (backgrounds.value.length <= 1) return;
   if (!confirm(`确定要删除「${bg.name}」吗？`)) return;
   await apiDeleteBackground(bg.id);
   await loadBackgrounds();
@@ -252,8 +343,21 @@ function onDragEnd() {
 .btn-add { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: #6366f1; color: #fff; border: none; border-radius: 0.75rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-add:hover { background: #4f46e5; transform: translateY(-1px); }
 
+/* Active background tuning panel */
+.tune-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.25rem 1.5rem; display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.tune-info { display: flex; align-items: center; gap: 1rem; min-width: 240px; }
+.tune-preview { height: 64px; width: 150px; border-radius: 0.625rem; border: 1px solid #334155; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tune-preview-overlay { position: absolute; inset: 0; pointer-events: none; }
+.tune-text .tune-name { font-size: 0.95rem; font-weight: 700; color: #f1f5f9; }
+.tune-text .tune-sub { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+.tune-sliders { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 0.85rem; }
+.tune-row label { display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.35rem; }
+.tune-val { color: #a5b4fc; font-weight: 700; }
+.tune-slider { width: 100%; accent-color: #6366f1; cursor: pointer; }
+
 .add-form-card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem; }
 .form-title { margin: 0 0 1.25rem; font-size: 1rem; font-weight: 600; color: #f1f5f9; }
+.form-title-hint { font-size: 0.75rem; font-weight: 400; color: #64748b; }
 .add-form { display: flex; flex-direction: column; gap: 1rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -263,6 +367,9 @@ function onDragEnd() {
 .form-input:focus { outline: none; border-color: #6366f1; }
 .form-input.font-mono { font-family: monospace; }
 .form-select { cursor: pointer; }
+.form-file { cursor: pointer; }
+.form-file::file-selector-button { background: #334155; border: none; border-radius: 0.5rem; color: #f1f5f9; padding: 0.375rem 0.75rem; margin-right: 0.75rem; font-size: 0.8rem; cursor: pointer; }
+.form-file::file-selector-button:hover { background: #6366f1; }
 .form-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
 .btn-cancel { padding: 0.625rem 1.25rem; background: transparent; border: 1px solid #475569; border-radius: 0.625rem; color: #94a3b8; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
 .btn-cancel:hover { background: #334155; }
@@ -289,7 +396,8 @@ function onDragEnd() {
 .font-semibold { font-weight: 600; }
 
 .bg-preview { height: 48px; width: 160px; border-radius: 0.5rem; border: 1px solid #334155; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.preview-label { font-size: 0.65rem; color: rgba(255,255,255,0.7); text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+.preview-label { font-size: 0.65rem; color: rgba(255,255,255,0.7); text-shadow: 0 1px 2px rgba(0,0,0,0.5); position: relative; z-index: 1; }
+.preview-meta { margin-top: 0.3rem; font-size: 0.68rem; color: #64748b; }
 
 .badge-active { display: inline-block; padding: 0.375rem 0.75rem; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 9999px; color: #34d399; font-size: 0.75rem; font-weight: 600; }
 .btn-activate { padding: 0.375rem 0.75rem; background: #334155; border: none; border-radius: 0.5rem; color: #94a3b8; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
@@ -301,7 +409,8 @@ function onDragEnd() {
 .btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .btn-delete { padding: 0.375rem 0.75rem; background: rgba(244, 63, 94, 0.15); border: none; border-radius: 0.5rem; color: #fb7185; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-.btn-delete:hover { background: #dc2626; color: #fff; }
+.btn-delete:hover:not(:disabled) { background: #dc2626; color: #fff; }
+.btn-delete:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .empty-cell { text-align: center; padding: 3rem; color: #64748b; }
 </style>

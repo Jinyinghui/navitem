@@ -16,22 +16,16 @@
     <div v-if="showAddForm" class="add-form-card">
       <h3 class="form-title">新增搜索引擎</h3>
       <form class="add-form" @submit.prevent="addSearchEngine">
-        <div class="form-row">
-          <div class="form-group">
-            <label>引擎名称 *</label>
-            <input v-model="newSe.name" placeholder="如: google" class="form-input" required />
-          </div>
-          <div class="form-group">
-            <label>显示标签 *</label>
-            <input v-model="newSe.label" placeholder="如: Google" class="form-input" required />
-          </div>
+        <div class="form-group">
+          <label>显示标签 *</label>
+          <input v-model="newSe.label" placeholder="如: Perplexity" class="form-input" required />
         </div>
         <div class="form-group">
           <label>URL 模板 * <span class="label-hint">使用 {q} 表示搜索关键词</span></label>
           <input v-model="newSe.url_template" placeholder="https://www.google.com/search?q={q}" class="form-input font-mono" required />
         </div>
         <div class="form-group">
-          <label>占位提示文字</label>
+          <label>占位提示文字 <span class="label-hint">留空则自动生成「使用 标签 搜索…」</span></label>
           <input v-model="newSe.placeholder" placeholder="可选的搜索框提示" class="form-input" />
         </div>
         <div class="form-actions">
@@ -123,7 +117,7 @@ import {
 
 const searchEngines = ref([]);
 const showAddForm = ref(false);
-const newSe = ref({ name: '', label: '', url_template: '', placeholder: '' });
+const newSe = ref({ label: '', url_template: '', placeholder: '' });
 
 const dragSeIndex = ref(null);
 const dragOverSeIndex = ref(null);
@@ -138,15 +132,18 @@ async function loadSearchEngines() {
 }
 
 function resetForm() {
-  newSe.value = { name: '', label: '', url_template: '', placeholder: '' };
+  newSe.value = { label: '', url_template: '', placeholder: '' };
 }
 
 async function addSearchEngine() {
+  const label = newSe.value.label.trim();
+  if (!label) return;
   await apiAddSearchEngine({
-    name: newSe.value.name,
-    label: newSe.value.label,
+    // name 为内部标识，与静态页面一致：由显示标签自动派生（小写、空格转下划线）
+    name: label.toLowerCase().replace(/\s+/g, '_'),
+    label,
     url_template: newSe.value.url_template,
-    placeholder: newSe.value.placeholder
+    placeholder: newSe.value.placeholder.trim() || `使用 ${label} 搜索...`
   });
   showAddForm.value = false;
   resetForm();

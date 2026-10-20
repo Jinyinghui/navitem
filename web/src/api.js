@@ -56,6 +56,7 @@ export const getUsers = () => axios.get(`${BASE}/users`, { headers: authHeaders(
 
 // 搜索引擎配置相关API
 export const getSearchEngines = () => axios.get(`${BASE}/search-engines`);
+export const getDefaultSearchEngine = () => axios.get(`${BASE}/search-engines/default`);
 export const addSearchEngine = (data) => axios.post(`${BASE}/search-engines`, data, { headers: authHeaders() });
 export const updateSearchEngine = (id, data) => axios.put(`${BASE}/search-engines/${id}`, data, { headers: authHeaders() });
 export const setDefaultSearchEngine = (id) => axios.put(`${BASE}/search-engines/${id}/default`, {}, { headers: authHeaders() });

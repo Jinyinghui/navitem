@@ -269,7 +269,7 @@
 
 <!-- Clock & Weather Row -->
 <div class="w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 select-none">
-  <div class="text-center sm:text-left">
+  <div class="glass-card rounded-2xl px-5 py-3 text-center sm:text-left">
       <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
       <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
     </div>

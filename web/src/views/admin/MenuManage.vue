@@ -113,7 +113,7 @@ import {
 
 const menus = ref([]);
 const newMenuName = ref('');
-const expanded = reactive({ 2: true });
+const expanded = reactive({});
 const newSubNames = reactive({});
 
 const dragMenuIdx = ref(null);

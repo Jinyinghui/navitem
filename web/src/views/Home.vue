@@ -233,17 +233,8 @@
               </div>
 </div>
 
-<!-- Clock / Search / Weather Row：与搜索框等高，与下方卡片网格同宽对齐 -->
-<div class="w-full max-w-7xl flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-4 mt-3">
-  <div class="glass-card rounded-2xl px-4 flex items-center justify-center gap-3 select-none order-2 lg:order-1 lg:w-60 shrink-0">
-      <div class="text-[26px] leading-none font-extrabold tracking-tight">{{ currentTime }}</div>
-      <div class="w-px h-7 bg-slate-500/25 shrink-0"></div>
-      <div class="text-left">
-        <div class="text-[11px] font-medium leading-tight">{{ currentDate }}</div>
-        <div class="text-[11px] text-slate-400 leading-tight mt-0.5">{{ greetingText }}</div>
-      </div>
-    </div>
-  <div class="flex-1 glass-search order-1 lg:order-2 rounded-2xl p-1.5 pl-4 flex items-center gap-2">
+<!-- Search Bar -->
+<div class="w-full max-w-7xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
                 <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                 </svg>
@@ -275,74 +266,79 @@
                   搜索
                 </button>
               </div>
-  <div class="relative order-3 lg:w-80 shrink-0">
-                <div
-                  class="glass-card rounded-2xl px-4 flex items-center gap-3 cursor-pointer h-full w-full"
-                  title="点击切换城市或使用自动定位"
-                  @click.stop="showWeatherPicker = !showWeatherPicker"
-                >
-                  <span class="text-2xl select-none">{{ weatherData.icon }}</span>
-                  <div class="text-left">
-                    <div class="flex items-center gap-1.5">
-                      <span class="text-xs sm:text-sm font-bold">{{ weatherCity.name }}</span>
-                      <span v-if="weatherCity.isAuto" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">定位</span>
-                      <span class="text-xs sm:text-sm font-extrabold text-indigo-400">{{ weatherData.temp }}°C</span>
-                      <span class="text-xs text-slate-400">{{ weatherData.desc }}</span>
-                      <span class="text-[10px] text-slate-400 ml-0.5">▾</span>
-                    </div>
+
+<!-- Clock & Weather Row -->
+<div class="w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 select-none">
+  <div class="text-center sm:text-left">
+      <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
+      <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
+    </div>
+  <div class="relative">
+                  <div
+                    class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer"
+                    title="点击切换城市或使用自动定位"
+                    @click.stop="showWeatherPicker = !showWeatherPicker"
+                  >
+                    <span class="text-2xl sm:text-3xl select-none">{{ weatherData.icon }}</span>
+                    <div class="text-left">
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs sm:text-sm font-bold">{{ weatherCity.name }}</span>
+                        <span v-if="weatherCity.isAuto" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">定位</span>
+                        <span class="text-xs sm:text-sm font-extrabold text-indigo-400">{{ weatherData.temp }}°C</span>
+                        <span class="text-xs text-slate-400">{{ weatherData.desc }}</span>
+                        <span class="text-[10px] text-slate-400 ml-0.5">▾</span>
+                      </div>
                   
+                    <div class="text-[11px] text-slate-400 mt-0.5 max-w-[230px] sm:max-w-[260px] truncate">💡 {{ weatherData.reminder }}</div></div>
                   </div>
-                </div>
 
-                <!-- Weather City Picker Popover -->
-                <div
-                  v-if="showWeatherPicker"
-                  id="weatherPickerPopover"
-                  class="absolute right-0 left-0 sm:left-auto mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
-                  @click.stop
-                >
-                  <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
-                    <span class="text-xs font-bold text-slate-200">📍 天气位置与提醒设置</span>
-                    <div class="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold transition"
-                        @click="locateUserWeather"
-                      >
-                        {{ locatingWeather ? '定位中...' : '📍 自动定位' }}
-                      </button>
-                      <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showWeatherPicker = false">✕</button>
+                  <!-- Weather City Picker Popover -->
+                  <div
+                    v-if="showWeatherPicker"
+                    id="weatherPickerPopover"
+                    class="absolute right-0 left-0 sm:left-auto mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+                    @click.stop
+                  >
+                    <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+                      <span class="text-xs font-bold text-slate-200">📍 天气位置与提醒设置</span>
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold transition"
+                          @click="locateUserWeather"
+                        >
+                          {{ locatingWeather ? '定位中...' : '📍 自动定位' }}
+                        </button>
+                        <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showWeatherPicker = false">✕</button>
+                      </div>
                     </div>
-                  </div>
+                      <div class="text-[11px] text-slate-400 mb-2">热门城市快速选择：</div>
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                      <button
+                        v-for="city in presetCities"
+                        :key="city.name"
+                        type="button"
+                        class="px-2.5 py-1 rounded-lg border text-xs transition"
+                        :class="weatherCity.name === city.name
+                          ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
+                          : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'"
+                        @click="selectPresetCity(city)"
+                      >
+                        {{ city.name }}
+                      </button>
+                    </div>
 
-                  <div class="text-[11px] text-slate-400 mb-3">💡 {{ weatherData.reminder }}</div>
-                    <div class="text-[11px] text-slate-400 mb-2">热门城市快速选择：</div>
-                  <div class="flex flex-wrap gap-1.5 mb-3">
-                    <button
-                      v-for="city in presetCities"
-                      :key="city.name"
-                      type="button"
-                      class="px-2.5 py-1 rounded-lg border text-xs transition"
-                      :class="weatherCity.name === city.name
-                        ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
-                        : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'"
-                      @click="selectPresetCity(city)"
-                    >
-                      {{ city.name }}
-                    </button>
+                    <form class="flex gap-1.5 pt-2 border-t border-slate-800" @submit.prevent="searchCustomCity">
+                      <input
+                        v-model="customCityQuery"
+                        type="text"
+                        placeholder="输入城市名称（如：杭州、成都、Tokyo）..."
+                        class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                      />
+                      <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shrink-0">切换</button>
+                    </form>
                   </div>
-
-                  <form class="flex gap-1.5 pt-2 border-t border-slate-800" @submit.prevent="searchCustomCity">
-                    <input
-                      v-model="customCityQuery"
-                      type="text"
-                      placeholder="输入城市名称（如：杭州、成都、Tokyo）..."
-                      class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
-                    />
-                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shrink-0">切换</button>
-                  </form>
                 </div>
-              </div>
 </div>
         <!-- Widgets Row: Hitokoto / Todo / Countdown -->
         <div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-4 select-none">

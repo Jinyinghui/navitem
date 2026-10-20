@@ -107,4 +107,24 @@ async function fetchAndStoreIcon(pageUrl) {
   throw new Error('未能抓取到图标：' + tried.slice(0, 3).join('；'));
 }
 
-module.exports = { fetchAndStoreIcon };
+// 把用户填写的在线图标链接下载落盘到 uploads/icons/，返回可入库的 custom_logo_path
+async function downloadIconFromUrl(iconUrl) {
+  let u;
+  try {
+    u = new URL(iconUrl);
+  } catch {
+    throw new Error('图标链接格式不正确');
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error('仅支持 http/https 图标链接');
+
+  const icon = await fetchBuffer(iconUrl, MAX_ICON_BYTES);
+  const ext = detectExt(icon.contentType, icon.buffer);
+  if (!ext) throw new Error('链接内容不是图片');
+  if (icon.buffer.length < MIN_ICON_BYTES) throw new Error('图标文件过小');
+  fs.mkdirSync(ICON_DIR, { recursive: true });
+  const name = crypto.createHash('sha1').update(iconUrl).digest('hex') + '.' + ext;
+  fs.writeFileSync(path.join(ICON_DIR, name), icon.buffer);
+  return { custom_logo_path: 'icons/' + name, source: iconUrl };
+}
+
+module.exports = { fetchAndStoreIcon, downloadIconFromUrl };

@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const auth = require('./authMiddleware');
-const { fetchAndStoreIcon } = require('../utils/fetchIcon');
+const { fetchAndStoreIcon, downloadIconFromUrl } = require('../utils/fetchIcon');
 const router = express.Router();
 
 function formatCardLogo(card) {
@@ -104,16 +104,29 @@ router.post('/refresh-icons', auth, async (req, res) => {
   });
 });
 
+// 图标落盘策略：填了在线图标链接且没有本地图标时，下载转存本地并关联（失败保留直链兜底）；
+// 两者都空时按网站地址自动抓取。返回最终入库的 { logo_url, custom_logo_path }
+async function resolveIconFields(logo_url, custom_logo_path, url) {
+  let finalLogoUrl = logo_url || '';
+  let finalCustomLogoPath = custom_logo_path || '';
+  if (finalLogoUrl && !finalCustomLogoPath) {
+    try {
+      finalCustomLogoPath = (await downloadIconFromUrl(finalLogoUrl)).custom_logo_path;
+      finalLogoUrl = '';
+    } catch { /* 转存失败保留在线链接，不阻塞保存 */ }
+  }
+  if (!finalLogoUrl && !finalCustomLogoPath && url) {
+    try { finalCustomLogoPath = (await fetchAndStoreIcon(url)).custom_logo_path; } catch { /* 抓取失败不阻塞保存，显示层有 favicon 兜底 */ }
+  }
+  return { logo_url: finalLogoUrl, custom_logo_path: finalCustomLogoPath };
+}
 // 新增、修改、删除卡片需认证
 router.post('/', auth, async (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
-  let finalCustomLogoPath = custom_logo_path || '';
-  if (!logo_url && !finalCustomLogoPath && url) {
-    try { finalCustomLogoPath = (await fetchAndStoreIcon(url)).custom_logo_path; } catch { /* 抓取失败不阻塞保存，显示层有 favicon 兜底 */ }
-  }
+  const icon = await resolveIconFields(logo_url, custom_logo_path, url);
   db.run(
     'INSERT INTO cards (menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, "order") VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', finalCustomLogoPath, desc || '', order || 0],
+    [menu_id || null, sub_menu_id || null, title, url, icon.logo_url, icon.custom_logo_path, desc || '', order || 0],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID });
@@ -123,13 +136,13 @@ router.post('/', auth, async (req, res) => {
 
 router.put('/:id', auth, async (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;
-  let finalCustomLogoPath = custom_logo_path || '';
-  if (!logo_url && !finalCustomLogoPath && url) {
-    try { finalCustomLogoPath = (await fetchAndStoreIcon(url)).custom_logo_path; } catch { /* 抓取失败不阻塞保存，显示层有 favicon 兜底 */ }
-  }
+  // 修改时换了新的在线图标链接（与库中旧链接不同）：丢弃旧本地图标，强制重新转存
+  const existing = await new Promise((resolve) => db.get("SELECT logo_url FROM cards WHERE id = ?", [req.params.id], (e, row) => resolve(row || null)));
+  const effectiveCustom = (logo_url && existing && logo_url !== existing.logo_url) ? "" : (custom_logo_path || "");
+  const icon = await resolveIconFields(logo_url, effectiveCustom, url);
   db.run(
     'UPDATE cards SET menu_id=?, sub_menu_id=?, title=?, url=?, logo_url=?, custom_logo_path=?, desc=?, "order"=? WHERE id=?',
-    [menu_id || null, sub_menu_id || null, title, url, logo_url || '', finalCustomLogoPath, desc || '', order || 0, req.params.id],
+    [menu_id || null, sub_menu_id || null, title, url, icon.logo_url, icon.custom_logo_path, desc || '', order || 0, req.params.id],
     function(err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ changed: this.changes });

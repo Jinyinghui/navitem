@@ -273,6 +273,21 @@
       <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
       <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
     </div>
+  <!-- Hitokoto Widget (时钟与天气之间) -->
+  <div class="glass-card rounded-2xl px-4 py-3 flex-1 w-full sm:w-auto min-w-0">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold shrink-0">💬 一言</span>
+        <span class="flex-1 text-[11px] text-slate-400 truncate text-right">—— {{ hitokoto.from }}</span>
+        <button
+          type="button"
+          class="text-[11px] text-slate-400 hover:text-indigo-400 transition disabled:opacity-40 shrink-0"
+          :disabled="hitokotoLoading"
+          title="换一句"
+          @click="fetchHitokoto"
+        >↻ 换一句</button>
+      </div>
+      <p class="mt-1.5 text-xs leading-relaxed line-clamp-2 cursor-pointer" :title="hitokoto.text" @click="fetchHitokoto">{{ hitokoto.text }}</p>
+    </div>
   <div class="relative">
                   <div
                     class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer"
@@ -340,24 +355,8 @@
                   </div>
                 </div>
 </div>
-        <!-- Widgets Row: Hitokoto / Todo / Countdown -->
+        <!-- Widgets Row: Todo / Exchange Rate / Countdown -->
         <div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-4 select-none">
-          <!-- Hitokoto Widget -->
-          <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold">💬 一言</span>
-              <button
-                type="button"
-                class="text-[11px] text-slate-400 hover:text-indigo-400 transition disabled:opacity-40"
-                :disabled="hitokotoLoading"
-                title="换一句"
-                @click="fetchHitokoto"
-              >↻ 换一句</button>
-            </div>
-            <p class="mt-2 text-xs leading-relaxed flex-1 cursor-pointer" title="点击换一句" @click="fetchHitokoto">{{ hitokoto.text }}</p>
-            <div class="mt-1.5 text-[11px] text-slate-400 text-right truncate">—— {{ hitokoto.from }}</div>
-          </div>
-
           <!-- Todo Widget -->
           <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
             <div class="flex items-center justify-between">
@@ -381,6 +380,42 @@
                 class="w-full px-2.5 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-xs outline-none focus:border-indigo-500"
               />
             </form>
+          </div>
+
+          <!-- Exchange Rate Widget -->
+          <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold">💱 汇率牌</span>
+              <button
+                type="button"
+                class="text-[11px] text-slate-400 hover:text-indigo-400 transition disabled:opacity-40"
+                :disabled="fxLoading"
+                title="刷新汇率"
+                @click="loadFxRates(true)"
+              >↻ {{ fxUpdatedText || '刷新' }}</button>
+            </div>
+            <div class="mt-2 flex items-center gap-1.5">
+              <input
+                v-model="fx.amount"
+                type="number"
+                min="0"
+                step="any"
+                placeholder="金额"
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-xs outline-none focus:border-indigo-500"
+                @input="saveFxPrefs"
+              />
+              <select v-model="fx.from" class="px-1.5 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-xs outline-none focus:border-indigo-500 shrink-0" @change="saveFxPrefs">
+                <option v-for="c in fxCurrencies" :key="c" :value="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="mt-1.5 flex items-center gap-1.5">
+              <div class="flex-1 min-w-0 px-2.5 py-1.5 text-xs font-bold text-indigo-400 truncate">= {{ fxResultText }}</div>
+              <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-500/15 text-slate-400 hover:text-indigo-400 text-xs flex items-center justify-center shrink-0" title="交换货币" @click="swapFx">⇅</button>
+              <select v-model="fx.to" class="px-1.5 py-1.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-xs outline-none focus:border-indigo-500 shrink-0" @change="saveFxPrefs">
+                <option v-for="c in fxCurrencies" :key="c" :value="c">{{ c }}</option>
+              </select>
+            </div>
+            <div class="mt-1.5 text-[11px] text-slate-400 truncate">1 {{ fx.from }} ≈ {{ fxUnitRateText }} {{ fx.to }} · 数据 open.er-api.com</div>
           </div>
 
           <!-- Countdown Widget -->
@@ -1172,6 +1207,75 @@ function saveCountdown() {
   showToast(`倒计时已设为「${name}」`);
 }
 
+// ===== 汇率牌（数据 open.er-api.com，本地缓存 6 小时，可输金额双向换算）=====
+const fxCurrencies = ['USD', 'CNY', 'HKD', 'EUR', 'GBP', 'JPY'];
+const fx = ref({ amount: 100, from: 'USD', to: 'CNY' });
+const fxRates = ref(null);
+const fxLoading = ref(false);
+const fxUpdatedText = ref('');
+const FX_FALLBACK_RATES = { USD: 1, CNY: 7.12, HKD: 7.81, EUR: 0.92, GBP: 0.79, JPY: 155.9 };
+
+async function loadFxRates(force = false) {
+  if (!force) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('nav_fx_rates') || 'null');
+      if (cached && cached.rates && Date.now() - cached.ts < 6 * 3600 * 1000) {
+        fxRates.value = cached.rates;
+        fxUpdatedText.value = new Date(cached.ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        return;
+      }
+    } catch (e) {}
+  }
+  if (fxLoading.value) return;
+  fxLoading.value = true;
+  try {
+    const res = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    if (data && data.rates) {
+      fxRates.value = data.rates;
+      const ts = Date.now();
+      fxUpdatedText.value = new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      localStorage.setItem('nav_fx_rates', JSON.stringify({ rates: data.rates, ts }));
+      return;
+    }
+    throw new Error('bad response');
+  } catch (e) {
+    if (!fxRates.value) fxRates.value = FX_FALLBACK_RATES;
+  } finally {
+    fxLoading.value = false;
+  }
+}
+
+function saveFxPrefs() {
+  localStorage.setItem('nav_fx_prefs', JSON.stringify(fx.value));
+}
+
+function loadFxPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('nav_fx_prefs') || 'null');
+    if (saved && fxCurrencies.includes(saved.from) && fxCurrencies.includes(saved.to)) fx.value = saved;
+  } catch (e) {}
+}
+
+function swapFx() {
+  const t = fx.value.from;
+  fx.value.from = fx.value.to;
+  fx.value.to = t;
+  saveFxPrefs();
+}
+
+const fxUnitRate = computed(() => {
+  if (!fxRates.value) return null;
+  const r = fxRates.value[fx.value.to] / fxRates.value[fx.value.from];
+  return isFinite(r) ? r : null;
+});
+const fxUnitRateText = computed(() => (fxUnitRate.value == null ? '—' : fxUnitRate.value.toLocaleString('zh-CN', { maximumFractionDigits: 4 })));
+const fxResultText = computed(() => {
+  const a = parseFloat(fx.value.amount);
+  if (isNaN(a) || fxUnitRate.value == null) return '—';
+  return (a * fxUnitRate.value).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + fx.value.to;
+});
+
 const countdownDaysAbs = computed(() => Math.abs(countdownDays.value));
 const countdownStatusText = computed(() => {
   if (countdownDays.value > 0) return `距离「${countdown.value.name}」`;
@@ -1230,6 +1334,8 @@ onMounted(async () => {
   fetchHitokoto();
   loadTodos();
   loadCountdown();
+  loadFxPrefs();
+  loadFxRates();
 
   try {
     const savedCity = localStorage.getItem('nav_weather_city');

@@ -203,150 +203,149 @@
       </header>
 
       <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
-      <section class="px-4 pt-8 pb-5 flex flex-col items-center">
-        <!-- Search Engine Tabs & Search Bar (Center) with Clock (Left) and Weather (Right) -->
-<div class="w-full max-w-6xl flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-4">
-  <!-- Clock (Left) -->
-  <div class="glass-card rounded-2xl px-5 py-3 flex flex-col items-center justify-center text-center select-none order-2 lg:order-1 lg:w-52 shrink-0">
-    <div class="text-4xl font-extrabold tracking-tight">{{ currentTime }}</div>
-                <div class="mt-1 text-[11px] sm:text-xs text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
-  </div>
+      <section class="px-4 sm:px-6 pt-8 pb-5 flex flex-col items-center">
+        <!-- Search Engine Tabs -->
+<div class="w-full max-w-7xl">
+  <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
+                <button
+                  v-for="eng in searchEngines"
+                  :key="eng.id || eng.name"
+                  type="button"
+                  class="px-3 py-1 rounded-full text-xs transition"
+                  :class="selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name)
+                    ? (theme === 'light' ? 'bg-indigo-600 text-white border border-indigo-600 font-semibold shadow-sm' : 'bg-indigo-500/25 text-indigo-400 border border-indigo-500/40 font-semibold')
+                    : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 border border-transparent')"
+                  @click="selectEngine(eng)"
+                >
+                  {{ eng.label }}
+                </button>
+                <button
+                  type="button"
+                  class="px-2.5 py-1 rounded-full text-[11px] border border-dashed transition"
+                  :class="theme === 'light'
+                    ? 'text-slate-500 hover:text-indigo-600 border-slate-300 hover:border-indigo-400'
+                    : 'text-slate-400 hover:text-indigo-400 border-slate-700 hover:border-indigo-500/50'"
+                  title="自定义配置搜索引擎与地址"
+                  @click="goAdmin('engine')"
+                >
+                  ⚙ 自定义引擎
+                </button>
+              </div>
+</div>
 
-  <div class="flex-1 w-full max-w-2xl mx-auto flex flex-col justify-center order-1 lg:order-2">
-    <!-- Search Engine Tabs -->
-    <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
-              <button
-                v-for="eng in searchEngines"
-                :key="eng.id || eng.name"
-                type="button"
-                class="px-3 py-1 rounded-full text-xs transition"
-                :class="selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name)
-                  ? (theme === 'light' ? 'bg-indigo-600 text-white border border-indigo-600 font-semibold shadow-sm' : 'bg-indigo-500/25 text-indigo-400 border border-indigo-500/40 font-semibold')
-                  : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 border border-transparent')"
-                @click="selectEngine(eng)"
-              >
-                {{ eng.label }}
-              </button>
-              <button
-                type="button"
-                class="px-2.5 py-1 rounded-full text-[11px] border border-dashed transition"
-                :class="theme === 'light'
-                  ? 'text-slate-500 hover:text-indigo-600 border-slate-300 hover:border-indigo-400'
-                  : 'text-slate-400 hover:text-indigo-400 border-slate-700 hover:border-indigo-500/50'"
-                title="自定义配置搜索引擎与地址"
-                @click="goAdmin('engine')"
-              >
-                ⚙ 自定义引擎
-              </button>
-            </div>
-
-    <!-- Search Bar -->
-    <div class="w-full glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
-              <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-              </svg>
-              <input
-                ref="searchInputRef"
-                v-model="searchQuery"
-                type="text"
-                :placeholder="selectedEngine ? selectedEngine.placeholder : '输入关键词搜索...'"
-                class="w-full bg-transparent border-none outline-none text-sm sm:text-base py-2 placeholder-slate-500"
-                @keyup.enter="handleSearch"
-              />
-              <button
-                v-if="searchQuery"
-                type="button"
-                class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-500/20 transition"
-                title="清空搜索"
-                @click="searchQuery = ''"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M18 6L6 18M6 6l12 12"/>
+<!-- Clock / Search / Weather Row：与搜索框等高，与下方卡片网格同宽对齐 -->
+<div class="w-full max-w-7xl flex flex-col lg:flex-row items-stretch justify-center gap-3 lg:gap-4 mt-3">
+  <div class="glass-card rounded-2xl px-4 flex items-center justify-center gap-3 select-none order-2 lg:order-1 lg:w-60 shrink-0">
+      <div class="text-[26px] leading-none font-extrabold tracking-tight">{{ currentTime }}</div>
+      <div class="w-px h-7 bg-slate-500/25 shrink-0"></div>
+      <div class="text-left">
+        <div class="text-[11px] font-medium leading-tight">{{ currentDate }}</div>
+        <div class="text-[11px] text-slate-400 leading-tight mt-0.5">{{ greetingText }}</div>
+      </div>
+    </div>
+  <div class="flex-1 glass-search order-1 lg:order-2 rounded-2xl p-1.5 pl-4 flex items-center gap-2">
+                <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                 </svg>
-              </button>
-              <kbd v-else class="hidden sm:inline-block px-2 py-0.5 text-xs font-mono rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/20 select-none" title="按 / 键快速聚焦搜索">/</kbd>
-              <button
-                type="button"
-                class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition shrink-0"
-                @click="handleSearch"
-              >
-                搜索
-              </button>
-            </div>
-  </div>
-
-  <div class="relative order-3 lg:w-72 shrink-0">
-              <div
-                class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer h-full w-full"
-                title="点击切换城市或使用自动定位"
-                @click.stop="showWeatherPicker = !showWeatherPicker"
-              >
-                <span class="text-2xl sm:text-3xl select-none">{{ weatherData.icon }}</span>
-                <div class="text-left">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs sm:text-sm font-bold">{{ weatherCity.name }}</span>
-                    <span v-if="weatherCity.isAuto" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">定位</span>
-                    <span class="text-xs sm:text-sm font-extrabold text-indigo-400">{{ weatherData.temp }}°C</span>
-                    <span class="text-xs text-slate-400">{{ weatherData.desc }}</span>
-                    <span class="text-[10px] text-slate-400 ml-0.5">▾</span>
-                  </div>
-                  <div class="text-[11px] text-slate-400 mt-0.5 max-w-[230px] sm:max-w-[260px] truncate">
-                    💡 {{ weatherData.reminder }}
+                <input
+                  ref="searchInputRef"
+                  v-model="searchQuery"
+                  type="text"
+                  :placeholder="selectedEngine ? selectedEngine.placeholder : '输入关键词搜索...'"
+                  class="w-full bg-transparent border-none outline-none text-sm sm:text-base py-2 placeholder-slate-500"
+                  @keyup.enter="handleSearch"
+                />
+                <button
+                  v-if="searchQuery"
+                  type="button"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-500/20 transition"
+                  title="清空搜索"
+                  @click="searchQuery = ''"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+                <kbd v-else class="hidden sm:inline-block px-2 py-0.5 text-xs font-mono rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/20 select-none" title="按 / 键快速聚焦搜索">/</kbd>
+                <button
+                  type="button"
+                  class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition shrink-0"
+                  @click="handleSearch"
+                >
+                  搜索
+                </button>
+              </div>
+  <div class="relative order-3 lg:w-80 shrink-0">
+                <div
+                  class="glass-card rounded-2xl px-4 flex items-center gap-3 cursor-pointer h-full w-full"
+                  title="点击切换城市或使用自动定位"
+                  @click.stop="showWeatherPicker = !showWeatherPicker"
+                >
+                  <span class="text-2xl select-none">{{ weatherData.icon }}</span>
+                  <div class="text-left">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-xs sm:text-sm font-bold">{{ weatherCity.name }}</span>
+                      <span v-if="weatherCity.isAuto" class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold">定位</span>
+                      <span class="text-xs sm:text-sm font-extrabold text-indigo-400">{{ weatherData.temp }}°C</span>
+                      <span class="text-xs text-slate-400">{{ weatherData.desc }}</span>
+                      <span class="text-[10px] text-slate-400 ml-0.5">▾</span>
+                    </div>
+                  
                   </div>
                 </div>
-              </div>
 
-              <!-- Weather City Picker Popover -->
-              <div
-                v-if="showWeatherPicker"
-                id="weatherPickerPopover"
-                class="absolute right-0 left-0 sm:left-auto mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
-                @click.stop
-              >
-                <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
-                  <span class="text-xs font-bold text-slate-200">📍 天气位置与提醒设置</span>
-                  <div class="flex items-center gap-1.5">
+                <!-- Weather City Picker Popover -->
+                <div
+                  v-if="showWeatherPicker"
+                  id="weatherPickerPopover"
+                  class="absolute right-0 left-0 sm:left-auto mt-2 w-80 sm:w-96 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+                  @click.stop
+                >
+                  <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+                    <span class="text-xs font-bold text-slate-200">📍 天气位置与提醒设置</span>
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold transition"
+                        @click="locateUserWeather"
+                      >
+                        {{ locatingWeather ? '定位中...' : '📍 自动定位' }}
+                      </button>
+                      <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showWeatherPicker = false">✕</button>
+                    </div>
+                  </div>
+
+                  <div class="text-[11px] text-slate-400 mb-3">💡 {{ weatherData.reminder }}</div>
+                    <div class="text-[11px] text-slate-400 mb-2">热门城市快速选择：</div>
+                  <div class="flex flex-wrap gap-1.5 mb-3">
                     <button
+                      v-for="city in presetCities"
+                      :key="city.name"
                       type="button"
-                      class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 text-indigo-300 text-[11px] font-semibold transition"
-                      @click="locateUserWeather"
+                      class="px-2.5 py-1 rounded-lg border text-xs transition"
+                      :class="weatherCity.name === city.name
+                        ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
+                        : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'"
+                      @click="selectPresetCity(city)"
                     >
-                      {{ locatingWeather ? '定位中...' : '📍 自动定位' }}
+                      {{ city.name }}
                     </button>
-                    <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showWeatherPicker = false">✕</button>
                   </div>
-                </div>
 
-                <div class="text-[11px] text-slate-400 mb-2">热门城市快速选择：</div>
-                <div class="flex flex-wrap gap-1.5 mb-3">
-                  <button
-                    v-for="city in presetCities"
-                    :key="city.name"
-                    type="button"
-                    class="px-2.5 py-1 rounded-lg border text-xs transition"
-                    :class="weatherCity.name === city.name
-                      ? 'bg-indigo-600 text-white border-indigo-500 font-semibold'
-                      : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border-slate-700'"
-                    @click="selectPresetCity(city)"
-                  >
-                    {{ city.name }}
-                  </button>
+                  <form class="flex gap-1.5 pt-2 border-t border-slate-800" @submit.prevent="searchCustomCity">
+                    <input
+                      v-model="customCityQuery"
+                      type="text"
+                      placeholder="输入城市名称（如：杭州、成都、Tokyo）..."
+                      class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                    />
+                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shrink-0">切换</button>
+                  </form>
                 </div>
-
-                <form class="flex gap-1.5 pt-2 border-t border-slate-800" @submit.prevent="searchCustomCity">
-                  <input
-                    v-model="customCityQuery"
-                    type="text"
-                    placeholder="输入城市名称（如：杭州、成都、Tokyo）..."
-                    class="flex-1 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
-                  />
-                  <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition shrink-0">切换</button>
-                </form>
               </div>
-            </div>
 </div>
         <!-- Widgets Row: Hitokoto / Todo / Countdown -->
-        <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 select-none">
+        <div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-4 select-none">
           <!-- Hitokoto Widget -->
           <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
             <div class="flex items-center justify-between">

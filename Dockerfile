@@ -26,7 +26,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY app.js config.js db.js ./
-COPY routes/ ./routes/
+COPY routes/ ./routes/
+COPY utils/ ./utils/
 
 COPY --from=frontend-builder /app/dist ./web/dist
 

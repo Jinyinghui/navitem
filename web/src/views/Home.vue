@@ -1,12 +1,98 @@
 <template>
-  <div class="relative min-h-screen flex flex-col">
+  <div class="relative min-h-screen flex flex-col" @click="ctxMenu.visible = false">
     <!-- Dynamic Switchable Background Layer -->
     <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-500" :style="customBgStyle" aria-hidden="true"></div>
     <div class="fixed inset-0 pointer-events-none z-0 transition-all duration-300" :style="customOverlayStyle" aria-hidden="true"></div>
 
-    <!-- Toast Notification -->
+    <!-- Single Toast Notification -->
     <div v-if="toastMsg" class="fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl border shadow-xl text-xs font-semibold bg-indigo-600 text-white border-indigo-400">
       {{ toastMsg }}
+    </div>
+
+    <!-- Right-Click Context Menu -->
+    <div
+      v-if="ctxMenu.visible"
+      id="portalContextMenu"
+      class="fixed z-50 w-56 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-1.5 shadow-2xl text-slate-100 backdrop-blur-xl select-none"
+      :style="{ left: `${ctxMenu.x}px`, top: `${ctxMenu.y}px` }"
+      @click.stop
+    >
+      <div class="px-3 py-2 text-[11px] font-bold text-slate-400 border-b border-slate-800 truncate">{{ ctxMenu.header }}</div>
+      <div class="py-1 space-y-0.5 text-xs">
+        <button
+          v-for="(item, idx) in ctxMenu.items"
+          :key="idx"
+          type="button"
+          class="ctx-menu-item w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition"
+          :class="item.danger ? 'text-rose-400 hover:bg-rose-500/15' : 'hover:bg-slate-800/80'"
+          @click="runCtxAction(item)"
+        >
+          <span class="text-sm leading-none">{{ item.icon }}</span>
+          <span class="font-medium">{{ item.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Edit Card Modal (Rename / Edit URL / Edit Icon / Add Card) -->
+    <div v-if="quickCardModal.visible" id="quickEditCardModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4" @click.self="quickCardModal.visible = false">
+      <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-6 shadow-2xl text-slate-100 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="text-base font-bold">{{ quickCardModal.isNew ? '新增导航卡片' : `快捷修改「${quickCardModal.form.title}」` }}</h3>
+          <button type="button" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 flex items-center justify-center" @click="quickCardModal.visible = false">✕</button>
+        </div>
+        <form class="space-y-3.5" @submit.prevent="submitQuickCardEdit">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">卡片名称 (重命名) *</label>
+            <input ref="qeTitleRef" v-model="quickCardModal.form.title" type="text" required placeholder="请输入卡片名称" class="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">目标链接地址 (URL) *</label>
+            <input ref="qeUrlRef" v-model="quickCardModal.form.url" type="url" required placeholder="https://..." class="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">图标地址 (URL 或上传本地图标)</label>
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-xl bg-indigo-500/15 border border-slate-700/60 flex items-center justify-center overflow-hidden shrink-0">
+                <img v-if="quickCardModal.form.logo_url" :src="quickCardModal.form.logo_url" alt="" class="w-5 h-5 object-contain" />
+                <span v-else class="text-xs font-bold text-indigo-400">{{ getFirstChar(quickCardModal.form.title) }}</span>
+              </div>
+              <input ref="qeLogoRef" v-model="quickCardModal.form.logo_url" type="text" placeholder="留空则自动拉取网站 Favicon" class="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+              <label class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium cursor-pointer shrink-0 transition" title="从本地选择图片作为图标">
+                <span>上传</span>
+                <input type="file" accept="image/*" class="hidden" @change="handleQuickLogoUpload" />
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">描述说明（可选）</label>
+            <input ref="qeDescRef" v-model="quickCardModal.form.desc" type="text" placeholder="简短描述该网站用途..." class="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+          </div>
+          <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-800">
+            <button type="button" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition" @click="quickCardModal.visible = false">取消</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-md transition">保存修改</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Quick Rename Menu Modal -->
+    <div v-if="quickMenuModal.visible" id="quickRenameMenuModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4" @click.self="quickMenuModal.visible = false">
+      <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-slate-100 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 class="text-base font-bold">{{ quickMenuModal.title }}</h3>
+          <button type="button" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 flex items-center justify-center" @click="quickMenuModal.visible = false">✕</button>
+        </div>
+        <form class="space-y-4" @submit.prevent="submitQuickMenuRename">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1.5">新菜单名称 *</label>
+            <input v-model="quickMenuModal.name" type="text" required placeholder="请输入菜单名称" class="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+          </div>
+          <div class="flex justify-end gap-2.5">
+            <button type="button" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition" @click="quickMenuModal.visible = false">取消</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition">保存</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Portal Content -->
@@ -40,6 +126,7 @@
                   isEditMode ? 'edit-mode-item' : ''
                 ]"
                 @click="selectMenu(menu)"
+                @contextmenu.prevent.stop="openMenuContextMenu($event, menu)"
               >
                 {{ menu.name }}
                 <span v-if="menu.subMenus && menu.subMenus.length > 0" class="ml-1 text-[10px] opacity-75">▾</span>
@@ -282,6 +369,7 @@
                 isEditMode ? 'edit-mode-item' : ''
               ]"
               @click="selectSubMenu(sub)"
+              @contextmenu.prevent.stop="openSubMenuContextMenu($event, sub)"
             >
               {{ sub.name }}
             </button>
@@ -334,6 +422,7 @@
               dragOverCardId === card.id && draggedCardId !== card.id ? 'is-drag-over' : ''
             ]"
             @click="onCardClick($event)"
+            @contextmenu.prevent.stop="openCardContextMenu($event, card)"
             @dragstart="onCardDragStart($event, card)"
             @dragover.prevent="onCardDragOver($event, card)"
             @dragleave="onCardDragLeave(card)"
@@ -391,12 +480,17 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   getMenus,
+  updateMenu,
+  deleteMenu,
+  updateSubMenu,
+  deleteSubMenu,
   getCards,
   getAllCards,
-  deleteMenu,
-  deleteSubMenu,
+  addCard,
+  updateCard,
   deleteCard,
   reorderCards,
+  uploadLogo,
   getActiveBackground,
   getSearchEngines
 } from '../api';
@@ -425,12 +519,197 @@ const searchInputRef = ref(null);
 const logoErrors = ref({});
 const isEditMode = ref(false);
 const toastMsg = ref('');
+let activeToastTimer = null;
 
 function showToast(msg) {
+  if (activeToastTimer) {
+    clearTimeout(activeToastTimer);
+    activeToastTimer = null;
+  }
   toastMsg.value = msg;
+  activeToastTimer = setTimeout(() => {
+    toastMsg.value = '';
+  }, 2200);
+}
+
+// Right-Click Context Menu & Quick Edit Modals State
+const ctxMenu = ref({ visible: false, x: 0, y: 0, header: '', items: [] });
+const quickCardModal = ref({
+  visible: false,
+  isNew: false,
+  targetCard: null,
+  form: { title: '', url: '', logo_url: '', desc: '' }
+});
+const quickMenuModal = ref({
+  visible: false,
+  type: 'menu',
+  target: null,
+  title: '',
+  name: ''
+});
+const qeTitleRef = ref(null);
+const qeUrlRef = ref(null);
+const qeLogoRef = ref(null);
+const qeDescRef = ref(null);
+
+function showContextMenuAt(x, y, header, items) {
+  const left = Math.min(x, window.innerWidth - 236);
+  const top = Math.min(y, window.innerHeight - 240);
+  ctxMenu.value = {
+    visible: true,
+    x: Math.max(8, left),
+    y: Math.max(8, top),
+    header,
+    items
+  };
+}
+
+function runCtxAction(item) {
+  ctxMenu.value.visible = false;
+  if (item && typeof item.action === 'function') item.action();
+}
+
+function openQuickCardEditModal(card, focusField = 'title', isNew = false) {
+  quickCardModal.value = {
+    visible: true,
+    isNew,
+    targetCard: isNew ? null : card,
+    form: {
+      title: card?.title || '',
+      url: card?.url || 'https://',
+      logo_url: card?.logo_url || '',
+      desc: card?.desc || ''
+    }
+  };
   setTimeout(() => {
-    if (toastMsg.value === msg) toastMsg.value = '';
-  }, 2400);
+    if (focusField === 'url') qeUrlRef.value?.focus();
+    else if (focusField === 'logo') qeLogoRef.value?.focus();
+    else if (focusField === 'desc') qeDescRef.value?.focus();
+    else qeTitleRef.value?.focus();
+  }, 30);
+}
+
+async function handleQuickLogoUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const res = await uploadLogo(file);
+    if (res.data?.url) {
+      quickCardModal.value.form.logo_url = res.data.url;
+      showToast('图标已上传，点击「保存修改」即可生效');
+      return;
+    }
+  } catch (err) {}
+  const reader = new FileReader();
+  reader.onload = () => {
+    quickCardModal.value.form.logo_url = String(reader.result || '');
+    showToast('本地图标已读取，点击「保存修改」即可生效');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitQuickCardEdit() {
+  const f = quickCardModal.value.form;
+  if (!f.title.trim() || !f.url.trim()) return;
+  if (quickCardModal.value.isNew) {
+    const payload = {
+      menu_id: activeMenu.value?.id || 1,
+      sub_menu_id: activeSubMenu.value?.id || null,
+      title: f.title.trim(),
+      url: f.url.trim(),
+      logo_url: f.logo_url.trim(),
+      desc: f.desc.trim(),
+      order: allCards.value.length + 1
+    };
+    try {
+      const res = await addCard(payload);
+      allCards.value.push({ id: res.data?.id || Date.now(), ...payload });
+    } catch (e) {
+      allCards.value.push({ id: Date.now(), ...payload });
+    }
+    quickCardModal.value.visible = false;
+    showToast(`已新增卡片「${f.title.trim()}」`);
+  } else if (quickCardModal.value.targetCard) {
+    const t = quickCardModal.value.targetCard;
+    t.title = f.title.trim();
+    t.url = f.url.trim();
+    t.logo_url = f.logo_url.trim();
+    t.display_logo = f.logo_url.trim();
+    t.desc = f.desc.trim();
+    try {
+      await updateCard(t.id, t);
+    } catch (e) {}
+    quickCardModal.value.visible = false;
+    showToast(`已更新卡片「${t.title}」`);
+  }
+}
+
+function openQuickMenuRename(type, item) {
+  quickMenuModal.value = {
+    visible: true,
+    type,
+    target: item,
+    title: type === 'sub' ? `重命名子菜单「${item.name}」` : `重命名主菜单「${item.name}」`,
+    name: item.name
+  };
+}
+
+async function submitQuickMenuRename() {
+  const newName = quickMenuModal.value.name.trim();
+  const target = quickMenuModal.value.target;
+  if (!newName || !target) return;
+  target.name = newName;
+  try {
+    if (quickMenuModal.value.type === 'menu') {
+      await updateMenu(target.id, { name: newName, order: target.order });
+    } else {
+      await updateSubMenu(target.id, { name: newName, order: target.order });
+    }
+  } catch (e) {}
+  quickMenuModal.value.visible = false;
+  showToast(`已重命名为「${newName}」`);
+}
+
+function openCardContextMenu(e, card) {
+  showContextMenuAt(e.clientX, e.clientY, `卡片：${card.title}`, [
+    { icon: '✏️', label: '重命名标题', action: () => openQuickCardEditModal(card, 'title', false) },
+    { icon: '🔗', label: '修改目标链接', action: () => openQuickCardEditModal(card, 'url', false) },
+    { icon: '🖼️', label: '修改/上传图标', action: () => openQuickCardEditModal(card, 'logo', false) },
+    { icon: '📝', label: '编辑描述与详情', action: () => openQuickCardEditModal(card, 'desc', false) },
+    { icon: '↗️', label: '新窗口打开链接', action: () => window.open(card.url, '_blank', 'noopener,noreferrer') },
+    { icon: '🗑️', label: '删除此卡片', danger: true, action: () => handleQuickDeleteCard(card) }
+  ]);
+}
+
+function openMenuContextMenu(e, menu) {
+  showContextMenuAt(e.clientX, e.clientY, `菜单：${menu.name}`, [
+    { icon: '✏️', label: '重命名菜单', action: () => openQuickMenuRename('menu', menu) },
+    {
+      icon: '➕',
+      label: '在此菜单新增卡片',
+      action: () => {
+        activeMenu.value = menu;
+        activeSubMenu.value = null;
+        openQuickCardEditModal(null, 'title', true);
+      }
+    },
+    { icon: '🗑️', label: '删除该菜单', danger: true, action: () => handleQuickDeleteMenu(menu) }
+  ]);
+}
+
+function openSubMenuContextMenu(e, sub) {
+  showContextMenuAt(e.clientX, e.clientY, `子菜单：${sub.name}`, [
+    { icon: '✏️', label: '重命名子菜单', action: () => openQuickMenuRename('sub', sub) },
+    {
+      icon: '➕',
+      label: '在此子菜单新增卡片',
+      action: () => {
+        activeSubMenu.value = sub;
+        openQuickCardEditModal(null, 'title', true);
+      }
+    },
+    { icon: '🗑️', label: '删除该子菜单', danger: true, action: () => handleQuickDeleteSubMenu(sub) }
+  ]);
 }
 
 // Theme state

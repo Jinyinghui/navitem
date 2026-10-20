@@ -176,7 +176,7 @@ const navItems = [
 ];
 
 const page = ref('welcome');
-const isLoggedIn = ref(true);
+const isLoggedIn = ref(false);
 const username = ref('admin');
 const password = ref('123456');
 const loading = ref(false);
@@ -212,11 +212,13 @@ const pageTitle = computed(() => {
 
 onMounted(() => {
   syncBodyThemeClass();
+  // Always require re-login every time entering Admin Management
+  isLoggedIn.value = false;
+  localStorage.removeItem('token');
   const qTab = route.query.tab;
   if (qTab && ['welcome', 'menu', 'card', 'background', 'engine', 'search', 'user'].includes(String(qTab))) {
     page.value = qTab === 'search' ? 'engine' : String(qTab);
   }
-  fetchDashboardData();
 });
 
 watch(page, (newPage) => {

@@ -15,6 +15,7 @@
             <option v-for="s in currentSubMenus" :key="s.id" :value="s.id">↳ {{ s.name }}</option>
           </select>
           <input v-model="filterKeyword" type="text" placeholder="过滤当前列表卡片..." class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500" />
+          <button type="button" :disabled="batchIconUpdating" @click="handleBatchRefreshIcons" title="重新抓取全部菜单下所有卡片的网站图标，抓取失败的保留原图标" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-medium transition">{{ batchIconUpdating ? '更新中…' : '🔄 批量更新图标' }}</button>
         </div>
       </div>
 
@@ -109,7 +110,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards, fetchCardIcon } from '../../api';
+import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards, fetchCardIcon, refreshAllCardIcons } from '../../api';
 
 const menus = ref([]);
 const cards = ref([]);
@@ -134,6 +135,23 @@ async function handleFetchIcon() {
     alert(e.response?.data?.error || '图标抓取失败');
   } finally {
     iconFetching.value = false;
+  }
+}
+
+const batchIconUpdating = ref(false);
+
+async function handleBatchRefreshIcons() {
+  if (batchIconUpdating.value) return;
+  batchIconUpdating.value = true;
+  try {
+    const res = await refreshAllCardIcons();
+    const r = res.data;
+    alert(`批量更新完成：共 ${r.total} 个网站，图标更新 ${r.updated} 个，无变化 ${r.unchanged} 个，失败 ${r.failed} 个（失败的已保留原图标）`);
+    await loadCards();
+  } catch (e) {
+    alert(e.response?.data?.error || '批量更新失败，请稍后重试');
+  } finally {
+    batchIconUpdating.value = false;
   }
 }
 const dragIdx = ref(null);

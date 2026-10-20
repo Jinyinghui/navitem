@@ -42,6 +42,7 @@ export const getCards = (menuId, subMenuId = null) => {
 };
 export const addCard = (data) => axios.post(`${BASE}/cards`, data, { headers: authHeaders() });
 export const fetchCardIcon = (url) => axios.post(`${BASE}/cards/fetch-icon`, { url }, { headers: authHeaders() });
+export const refreshAllCardIcons = () => axios.post(`${BASE}/cards/refresh-icons`, {}, { headers: authHeaders(), timeout: 600000 });
 export const updateCard = (id, data) => axios.put(`${BASE}/cards/${id}`, data, { headers: authHeaders() });
 export const deleteCard = (id) => axios.delete(`${BASE}/cards/${id}`, { headers: authHeaders() });
 export const reorderCards = (items) => axios.put(`${BASE}/cards/reorder`, { items }, { headers: authHeaders() });

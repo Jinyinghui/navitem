@@ -75,6 +75,35 @@ router.post('/fetch-icon', auth, async (req, res) => {
     res.status(422).json({ error: e.message });
   }
 });
+// 批量刷新全部卡片的站点图标（需认证）：重新抓取每个网址的图标，失败的保留原图标
+router.post('/refresh-icons', auth, async (req, res) => {
+  db.all('SELECT id, url, custom_logo_path FROM cards', [], async (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const targets = rows.filter(r => r.url && /^https?:\/\//i.test(r.url));
+    let updated = 0, unchanged = 0, failed = 0;
+    const queue = [...targets];
+    async function worker() {
+      while (queue.length) {
+        const card = queue.shift();
+        try {
+          const result = await fetchAndStoreIcon(card.url);
+          if (result.custom_logo_path && result.custom_logo_path !== card.custom_logo_path) {
+            await new Promise((resolve) => db.run('UPDATE cards SET custom_logo_path = ? WHERE id = ?', [result.custom_logo_path, card.id], () => resolve()));
+            updated++;
+          } else {
+            unchanged++;
+          }
+        } catch (e) {
+          failed++;
+        }
+      }
+    }
+    const CONCURRENCY = 4;
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(CONCURRENCY, targets.length)) }, worker));
+    res.json({ total: targets.length, updated, unchanged, failed });
+  });
+});
+
 // 新增、修改、删除卡片需认证
 router.post('/', auth, async (req, res) => {
   const { menu_id, sub_menu_id, title, url, logo_url, custom_logo_path, desc, order } = req.body;

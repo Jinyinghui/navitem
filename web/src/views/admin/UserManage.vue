@@ -1,39 +1,36 @@
 <template>
   <div class="user-manage">
-    <div class="user-header">
-    </div>
-    
     <div class="user-card">
-      <div class="password-section">
-        <h3 class="section-title">修改密码</h3>
-        <div class="password-form">
-          <div class="form-group">
-            <label>当前密码：</label>
-            <input v-model="oldPassword" type="password" placeholder="请输入当前密码" class="input" />
-          </div>
-          <div class="form-group">
-            <label>新密码：</label>
-            <input v-model="newPassword" type="password" placeholder="请输入新密码" class="input" />
-          </div>
-          <div class="form-group">
-            <label>确认新密码：</label>
-            <input v-model="confirmPassword" type="password" placeholder="请再次输入新密码" class="input" />
-          </div>
-          <div class="form-actions">
-            <button @click="handleChangePassword" class="btn" :disabled="loading">
-              {{ loading ? '修改中...' : '修改密码' }}
-            </button>
-          </div>
-          <p v-if="message" :class="['message', messageType]">{{ message }}</p>
+      <h2 class="section-title">管理员密码安全</h2>
+      <p class="section-desc">定期更换高强度密码有助于保障导航站后台数据安全。</p>
+
+      <form class="password-form" @submit.prevent="handleChangePassword">
+        <div class="form-group">
+          <label>当前密码</label>
+          <input v-model="oldPassword" type="password" placeholder="请输入当前密码" class="input" />
         </div>
-      </div>
+        <div class="form-group">
+          <label>新密码（至少 6 位）</label>
+          <input v-model="newPassword" type="password" placeholder="请输入新密码" class="input" />
+        </div>
+        <div class="form-group">
+          <label>确认新密码</label>
+          <input v-model="confirmPassword" type="password" placeholder="请再次输入新密码" class="input" />
+        </div>
+
+        <p v-if="message" :class="['message', messageType]">{{ message }}</p>
+
+        <button type="submit" class="btn-submit" :disabled="loading">
+          {{ loading ? '提交更新中...' : '确认修改密码' }}
+        </button>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { getUserProfile, changePassword } from '../../api';
+import { ref } from 'vue';
+import { changePassword } from '../../api';
 
 const oldPassword = ref('');
 const newPassword = ref('');
@@ -41,42 +38,33 @@ const confirmPassword = ref('');
 const loading = ref(false);
 const message = ref('');
 const messageType = ref('success');
-const userInfo = ref({});
-
-onMounted(async () => {
-  try {
-    const response = await getUserProfile();
-    userInfo.value = response.data;
-  } catch (error) {
-    console.error('获取用户信息失败:', error);
-  }
-});
 
 async function handleChangePassword() {
   if (!oldPassword.value || !newPassword.value || !confirmPassword.value) {
     showMessage('请填写所有密码字段', 'error');
     return;
   }
-  
   if (newPassword.value !== confirmPassword.value) {
     showMessage('两次输入的新密码不一致', 'error');
     return;
   }
-  
   if (newPassword.value.length < 6) {
     showMessage('新密码长度至少6位', 'error');
     return;
   }
-  
+
   loading.value = true;
   message.value = '';
-  
   try {
     await changePassword(oldPassword.value, newPassword.value);
-    showMessage('密码修改成功', 'success');
+    showMessage('密码修改成功，即将重新登录...', 'success');
     oldPassword.value = '';
     newPassword.value = '';
     confirmPassword.value = '';
+    setTimeout(() => {
+      localStorage.removeItem('token');
+      window.location.reload();
+    }, 1800);
   } catch (error) {
     showMessage(error.response?.data?.message || '密码修改失败', 'error');
   } finally {
@@ -87,158 +75,97 @@ async function handleChangePassword() {
 function showMessage(text, type) {
   message.value = text;
   messageType.value = type;
-  if (text === '密码修改成功' && type === 'success') {
-    setTimeout(() => {
-      message.value = '2秒后自动退出登录,请使用新密码重新登录...';
-      setTimeout(() => {
-        localStorage.removeItem('token');
-        window.location.reload();
-      }, 2000);
-    }, 500);
-  } else {
-    setTimeout(() => {
-      message.value = '';
-    }, 3000);
-  }
 }
 </script>
 
 <style scoped>
 .user-manage {
-  max-width: 1400px;
-  width: 90%;
-  margin: 0 auto;
-}
-
-.page-title {
-  text-align: center;
-  font-size: 1.6rem;
-  font-weight: 500;
-  margin: 32px 0 32px 0;
-  letter-spacing: 2px;
-  color: #222;
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
 }
 
 .user-card {
-  width: 50%;
-  margin: 0 auto;
-  background: linear-gradient(135deg,#667eea,#764ba2);
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  padding: 10px 24px;
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 2rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
 }
 
 .section-title {
-  text-align: center;
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: #222;
-  margin-bottom: 20px;
-  border-bottom: 2px solid #eaf1ff;
-  padding-bottom: 8px;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.25rem;
+  color: #0f172a;
 }
 
-.password-section {
-  margin-bottom: 40px;
+.section-desc {
+  margin: 0 0 1.5rem 0;
+  font-size: 0.88rem;
+  color: #64748b;
 }
 
 .password-form {
-  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
 }
 
 .form-group {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #222;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
 }
 
 .input {
-  width: 100%;
-  padding: 12px 12px;
-  border-radius: 8px;
-  border: 1px solid #d0d7e2;
-  background: #fff;
-  color: #222;
-  font-size: 1rem;
-  box-sizing: border-box;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.92rem;
+  outline: none;
 }
 
 .input:focus {
-  outline: 2px solid #2566d8;
-  border-color: #2566d8;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
-.form-actions {
-  text-align: center;
-  margin-top: 24px;
-}
-
-.btn {
-  background: #2566d8;
-  color: #fff;
+.btn-submit {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 10px;
   border: none;
-  border-radius: 8px;
-  padding: 12px 24px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.btn:hover:not(:disabled) {
-  background: #174ea6;
-}
-
-.btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
 }
 
 .message {
-  margin-top: 16px;
-  padding: 12px;
+  margin: 0;
+  padding: 0.65rem 0.9rem;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 0.86rem;
 }
 
 .message.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
 }
 
 .message.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
-
-@media (max-width: 768px) {
-  .user-manage {
-    padding: 0 2vw;
-  }
-  .user-card {
-    width: 80%;
-    padding: 12px 2vw;
-  }
-  .password-form {
-    max-width: 100%;
-  }
-  .input {
-    width: 100%;
-    min-width: 0;
-    font-size: 14px;
-    padding: 8px 8px;
-  }
-  .btn {
-    width: 100%;
-    padding: 10px 0;
-    font-size: 14px;
-  }
-}
-</style> 
+</style>

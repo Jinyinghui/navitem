@@ -1,104 +1,179 @@
 <template>
   <div v-if="!isLoggedIn" class="login-container">
     <div class="login-card">
-      <h2 class="login-title">后台管理登录</h2>
-      <div class="login-form">
-        <input v-model="username" type="text" placeholder="用户名" class="login-input" @keyup.enter="handleLogin" />
-        <div class="password-input-wrapper">
-          <input
-            v-model="password"
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="密码"
-            class="login-input password-input"
-            @keyup.enter="handleLogin"
-          />
-          <span class="toggle-password" @click="showPassword = !showPassword">
-            <svg v-if="showPassword" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-            <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-6.06"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/></svg>
-          </span>
+      <div class="login-brand">
+        <div class="login-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
         </div>
-        <div class="login-buttons">
-          <button @click="goHome" class="back-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-            返回首页
-          </button>
-          <button @click="handleLogin" class="login-btn" :disabled="loading">
-            {{ loading ? '登录中...' : '登录' }}
-          </button>
-        </div>
-        <p v-if="loginError" class="login-error">{{ loginError }}</p>
+        <h2 class="login-title">Nav-Item 控制台</h2>
+        <p class="login-subtitle">登录以管理导航分类与书签卡片</p>
       </div>
+
+      <form class="login-form" @submit.prevent="handleLogin">
+        <div class="field-group">
+          <label>管理员账号</label>
+          <input v-model="username" type="text" placeholder="请输入用户名" class="login-input" autocomplete="username" />
+        </div>
+
+        <div class="field-group">
+          <label>登录密码</label>
+          <div class="password-input-wrapper">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="请输入密码"
+              class="login-input password-input"
+              autocomplete="current-password"
+            />
+            <button type="button" class="toggle-password" @click="showPassword = !showPassword" aria-label="切换密码显示">
+              <svg v-if="showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.77 21.77 0 0 1 5.06-6.06"/><path d="M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p v-if="loginError" class="login-error">{{ loginError }}</p>
+
+        <div class="login-buttons">
+          <button type="button" class="back-btn" @click="goHome">
+            返回前台
+          </button>
+          <button type="submit" class="login-btn" :disabled="loading">
+            {{ loading ? '验证中...' : '登录后台' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
-  
+
   <div v-else class="admin-layout">
-    <aside class="admin-sider" :class="{ open: siderOpen }" @click.self="closeSider">
-      <div class="logo clickable" @click="page='welcome'; closeSider()">Admin</div>
-      <ul class="menu-list">
-        <li :class="{active: page==='menu'}" @click="page='menu'; closeSider()">栏目管理</li>
-        <li :class="{active: page==='card'}" @click="page='card'; closeSider()">卡片管理</li>
-        <li :class="{active: page==='ad'}" @click="page='ad'; closeSider()">广告管理</li>
-        <li :class="{active: page==='friend'}" @click="page='friend'; closeSider()">友链管理</li>
-        <li :class="{active: page==='user'}" @click="page='user'; closeSider()">用户管理</li>
-      </ul>
-    </aside>
-    <main class="admin-main">
-      <div class="admin-header">
-        <button class="menu-toggle" @click="toggleSider">
-          &#9776;
-        </button>
-        <div class="header-title">{{ pageTitle }}</div>
-        <div class="header-actions">
-          <span class="home-icon" @click="goHome" title="进入主页">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4h-4v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10.5z" stroke="#2566d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <button class="btn logout-btn" @click="logout">退出登录</button>
+    <!-- 移动端遮罩 -->
+    <div v-if="siderOpen" class="sider-backdrop" @click="closeSider"></div>
+
+    <aside class="admin-sider" :class="{ open: siderOpen }">
+      <div class="sider-brand" @click="page = 'welcome'; closeSider()">
+        <div class="sider-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+          </svg>
         </div>
+        <span>Nav-Item 管理</span>
       </div>
-      <div class="admin-content">
-        <div v-if="page==='welcome'" class="welcome-page">
-          <h2 class="welcome-title">欢迎您进入 Nav-Item 后台管理系统</h2>
-          <div class="welcome-cards">
-            <div class="welcome-card">
-              <div class="welcome-icon time-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#1abc9c" stroke-width="2"/><path d="M12 6v6l4 2" stroke="#1abc9c" stroke-width="2" stroke-linecap="round"/></svg>
-              </div>
-              <div class="welcome-label">上次登录时间</div>
-              <div class="welcome-value">{{ lastLoginTime || '--' }}</div>
+
+      <ul class="menu-list">
+        <li :class="{ active: page === 'welcome' }" @click="page = 'welcome'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span>概览面板</span>
+        </li>
+        <li :class="{ active: page === 'menu' }" @click="page = 'menu'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span>栏目管理</span>
+        </li>
+        <li :class="{ active: page === 'card' }" @click="page = 'card'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          <span>卡片管理</span>
+        </li>
+        <li :class="{ active: page === 'search' }" @click="page = 'search'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>搜索引擎</span>
+        </li>
+        <li :class="{ active: page === 'background' }" @click="page = 'background'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>背景设置</span>
+        </li>
+        <li :class="{ active: page === 'user' }" @click="page = 'user'; closeSider()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>账号安全</span>
+        </li>
+      </ul>
+
+      <div class="sider-footer">
+        <button type="button" class="sider-home-btn" @click="goHome">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span>访问前台导航</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-header">
+        <div class="header-left">
+          <button type="button" class="menu-toggle" @click="toggleSider" aria-label="展开菜单">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <h1 class="header-title">{{ pageTitle }}</h1>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="btn-outline-sm" @click="goHome">预览首页</button>
+          <button type="button" class="btn-logout" @click="logout">退出登录</button>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <!-- 概览页 -->
+        <div v-if="page === 'welcome'" class="welcome-page">
+          <div class="welcome-banner">
+            <div>
+              <h2>欢迎回来，管理员</h2>
+              <p>在这里集中管理您的导航主分类、二级子分类与书签卡片。</p>
             </div>
-            <div class="welcome-card">
-              <div class="welcome-icon ip-icon">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#1abc9c" stroke-width="2"/><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z" stroke="#1abc9c" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="#1abc9c"/></svg>
-              </div>
-              <div class="welcome-label">上次登录IP</div>
-              <div class="welcome-value">{{ lastLoginIp || '--' }}</div>
+            <div class="banner-actions">
+              <button type="button" class="primary-action-btn" @click="page = 'card'">+ 管理导航卡片</button>
+              <button type="button" class="secondary-action-btn" @click="page = 'background'">切换背景壁纸</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">主分类数量</div>
+              <div class="stat-value">{{ stats.menuCount }}</div>
+              <div class="stat-meta">包含 {{ stats.subMenuCount }} 个二级子分类</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">导航卡片总数</div>
+              <div class="stat-value">{{ stats.cardCount }}</div>
+              <div class="stat-meta">支持站内实时检索</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">上次登录时间</div>
+              <div class="stat-value stat-text">{{ lastLoginTime || '首次登录' }}</div>
+              <div class="stat-meta">系统安全审计记录</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">上次登录 IP</div>
+              <div class="stat-value stat-text">{{ lastLoginIp || '--' }}</div>
+              <div class="stat-meta">最近一次认证来源</div>
             </div>
           </div>
         </div>
-        <MenuManage v-if="page==='menu'" />
-        <CardManage v-if="page==='card'" />
-        <AdManage v-if="page==='ad'" />
-        <FriendLinkManage v-if="page==='friend'" />
-        <UserManage v-if="page==='user'" />
-      </div>
+
+        <MenuManage v-if="page === 'menu'" />
+        <CardManage v-if="page === 'card'" />
+        <SearchEngineManage v-if="page === 'search'" />
+        <BackgroundManage v-if="page === 'background'" />
+        <UserManage v-if="page === 'user'" />
+      </main>
+
       <footer class="admin-footer">
-        <p class="admin-copyright">Copyright © 2025 Nav-Item | <a href="https://github.com/eooce/Nav-Item" target="_blank" class="footer-link">Powered by eooce</a></p>
+        <p>Copyright © {{ new Date().getFullYear() }} Nav-Item · 现代化导航管理系统</p>
       </footer>
-    </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { login } from '../api';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { login, getMenus, getAllCards, getCurrentUser } from '../api';
 import MenuManage from './admin/MenuManage.vue';
 import CardManage from './admin/CardManage.vue';
-import AdManage from './admin/AdManage.vue';
-import FriendLinkManage from './admin/FriendLinkManage.vue';
 import UserManage from './admin/UserManage.vue';
+import BackgroundManage from './admin/BackgroundManage.vue';
+import SearchEngineManage from './admin/SearchEngineManage.vue';
 
+const router = useRouter();
 const page = ref('welcome');
 const lastLoginTime = ref('');
 const lastLoginIp = ref('');
@@ -110,14 +185,20 @@ const loginError = ref('');
 const showPassword = ref(false);
 const siderOpen = ref(false);
 
+const stats = reactive({
+  menuCount: 0,
+  subMenuCount: 0,
+  cardCount: 0
+});
+
 const pageTitle = computed(() => {
   switch (page.value) {
-    case 'menu': return '栏目管理';
-    case 'card': return '卡片管理';
-    case 'ad': return '广告管理';
-    case 'friend': return '友链管理';
-    case 'user': return '用户管理';
-    default: return '';
+    case 'menu': return '栏目分类管理';
+    case 'card': return '导航卡片管理';
+    case 'search': return '首页搜索引擎配置';
+    case 'background': return '背景主题与壁纸设置';
+    case 'user': return '账号与密码安全';
+    default: return '系统概览';
   }
 });
 
@@ -125,20 +206,36 @@ onMounted(() => {
   const token = localStorage.getItem('token');
   isLoggedIn.value = !!token;
   if (isLoggedIn.value) {
-    // 拉取用户信息
-    fetchLastLoginInfo();
+    fetchDashboardData();
   }
 });
-async function fetchLastLoginInfo() {
+
+watch(page, (newPage) => {
+  if (newPage === 'welcome' && isLoggedIn.value) {
+    fetchDashboardData();
+  }
+});
+
+async function fetchDashboardData() {
   try {
-    const res = await fetch('/api/users/me', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-    if (res.ok) {
-      const data = await res.json();
-      lastLoginTime.value = data.last_login_time || '';
-      lastLoginIp.value = data.last_login_ip || '';
+    const [userRes, menuRes, cardRes] = await Promise.allSettled([
+      getCurrentUser(),
+      getMenus(),
+      getAllCards()
+    ]);
+    if (userRes.status === 'fulfilled' && userRes.value?.data) {
+      lastLoginTime.value = userRes.value.data.last_login_time || '';
+      lastLoginIp.value = userRes.value.data.last_login_ip || '';
     }
-  } catch (error) {
-    console.error('获取用户信息失败:', error);
+    if (menuRes.status === 'fulfilled' && Array.isArray(menuRes.value?.data)) {
+      stats.menuCount = menuRes.value.data.length;
+      stats.subMenuCount = menuRes.value.data.reduce((acc, m) => acc + (m.subMenus?.length || 0), 0);
+    }
+    if (cardRes.status === 'fulfilled' && Array.isArray(cardRes.value?.data)) {
+      stats.cardCount = cardRes.value.data.length;
+    }
+  } catch (err) {
+    console.error('加载概览数据失败:', err);
   }
 }
 
@@ -147,10 +244,8 @@ async function handleLogin() {
     loginError.value = '请输入用户名和密码';
     return;
   }
-  
   loading.value = true;
   loginError.value = '';
-  
   try {
     const response = await login(username.value, password.value);
     if (response.data.token) {
@@ -158,9 +253,10 @@ async function handleLogin() {
       isLoggedIn.value = true;
       lastLoginTime.value = response.data.lastLoginTime || '';
       lastLoginIp.value = response.data.lastLoginIp || '';
+      fetchDashboardData();
     }
   } catch (error) {
-    loginError.value = error.response?.data?.message || '登录失败，请检查用户名和密码';
+    loginError.value = error.response?.data?.error || error.response?.data?.message || '登录失败，请检查用户名和密码';
   } finally {
     loading.value = false;
   }
@@ -175,444 +271,509 @@ function logout() {
 }
 
 function goHome() {
-  window.open('/', '_blank');
+  router.push('/');
 }
+
 function toggleSider() {
   siderOpen.value = !siderOpen.value;
 }
+
 function closeSider() {
   siderOpen.value = false;
 }
 </script>
 
 <style scoped>
+/* 登录页 */
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg,#667eea,#764ba2);
-  font-family: 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: radial-gradient(circle at top left, #1e1b4b, #0f172a 60%);
 }
 
 .login-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  padding: 0 40px 40px 40px;
-  width: 400px;
-  max-width: 90%;
+  width: 100%;
+  max-width: 420px;
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.25rem 2rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  color: #f8fafc;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.login-logo {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 0.85rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
 }
 
 .login-title {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #2164e1;
-  margin-bottom: 32px;
-  letter-spacing: 2px;
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.login-subtitle {
+  margin: 0.4rem 0 0;
+  font-size: 0.86rem;
+  color: #94a3b8;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 1.15rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-group label {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #cbd5e1;
 }
 
 .login-input {
-  padding: 12px 16px;
-  border: 1px solid #d0d7e2;
-  border-radius: 8px;
-  font-size: 16px;
-  background: #fff;
-  color: #222;
-  height: 48px;
-  line-height: 48px;
-  box-sizing: border-box;
+  width: 100%;
+  padding: 0.75rem 0.95rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.65);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .login-input:focus {
-  outline: 2px solid #2566d8;
-  border-color: #2566d8;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
-.login-btn {
-  background: #2566d8;
-  color: #fff;
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 2.75rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
   border: none;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: 500;
+  color: #94a3b8;
   cursor: pointer;
-  transition: background 0.2s;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
 }
 
-.login-btn:hover:not(:disabled) {
-  background: #174ea6;
-}
-
-.login-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
+.login-error {
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .login-buttons {
   display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 .back-btn {
-  background: #f8f9fa;
-  color: #2b2b2b;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 16px;
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  font-size: 0.92rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  justify-content: center;
 }
 
 .back-btn:hover {
-  background: #e9ecef;
-  color: #7e42ff;
-  border-color: #adb5bd;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .login-btn {
   flex: 2;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.login-error {
-  color: #e74c3c;
-  text-align: center;
-  margin: 0;
-  font-size: 14px;
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
 }
 
+/* 后台主布局 */
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #f5f6fa;
-  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
 }
+
 .admin-sider {
-  width: 180px;
-  background: #fff;
-  color: #222;
+  width: 240px;
+  background: #0f172a;
+  color: #f8fafc;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  padding-top: 32px;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.06);
   position: fixed;
   top: 0;
   left: 0;
-  height: 100vh;
+  bottom: 0;
   z-index: 100;
+  padding: 1.5rem 1rem;
 }
-.logo {
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 32px;
-  letter-spacing: 2px;
-  color: #1349a6;
+
+.sider-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem 1.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
   cursor: pointer;
-  user-select: none;
-  transition: color 0.2s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.25rem;
 }
-.logo.clickable:hover {
-  color: #176efa;
+
+.sider-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .menu-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  flex: 1;
-}
-.menu-list li {
-  padding: 16px 32px;
-  cursor: pointer;
-  font-size: 16px;
-  border-left: 4px solid transparent;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
-  color: #222;
-}
-.menu-list li.active {
-  background: #eaf1ff;
-  border-left: 4px solid #2566d8;
-  color: #2566d8;
-  font-weight: bold;
-}
-.admin-main {
-  flex: 1;
-  background: #f5f6fa;
-  padding: 64px 0 0 180px;
-  min-width: 0;
-  overflow-x: auto;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-}
-.admin-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 64px;
-  padding: 0 48px 0 0;
-  background: #f5f6fa;
-  position: fixed;
-  top: 0;
-  left: 180px;
-  right: 0;
-  z-index: 101;
-  border-bottom: 1px solid #e3e6ef;
-}
-.header-title {
+  gap: 0.35rem;
   flex: 1;
-  text-align: center;
-  margin-left: 180px;
-  font-size: 1.5rem;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: #222;
 }
+
+.menu-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-list li:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.menu-list li.active {
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.sider-footer {
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sider-home-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sider-home-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.admin-main {
+  flex: 1;
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-header {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: #334155;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.header-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.65rem;
 }
-.home-icon {
-  display: flex;
-  align-items: center;
-  margin-right: 18px;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: background 0.2s;
-  padding: 4px;
-}
-.home-icon:hover {
-  background: #eaf1ff;
-}
-.btn.logout-btn {
-  background: #f7caca;
-  color: #e74c3c;
-  border: 1px solid #f7caca;
-  border-radius: 10px;
-  padding: 6px 10px;
-  font-size: 15px;
+
+.btn-outline-sm {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-size: 0.85rem;
   font-weight: 500;
-  margin: 0;
-  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
+  transition: all 0.2s;
 }
-.btn.logout-btn:hover {
-  background: #e74c3c;
+
+.btn-outline-sm:hover {
+  border-color: #6366f1;
+  color: #4f46e5;
+}
+
+.btn-logout {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
   color: #fff;
 }
+
 .admin-content {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0 0 0;
-  margin-top: 0;
-}
-.admin-footer {
-  margin-top: auto;
-  text-align: center;
-  padding: 2rem 0 1rem 0;
-  background: transparent;
-}
-.admin-copyright {
-  color: #1d70cc;
-  font-size: 14px;
-  margin: 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-.footer-link {
-  color: #1d70cc;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-link:hover {
-  color: #3218ed;
-}
-.password-input-wrapper {
-  position: relative;
+  padding: 2rem;
+  max-width: 1280px;
   width: 100%;
+  margin: 0 auto;
 }
-.password-input {
-  width: 100%;
-  padding-right: 48px;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-.toggle-password {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 48px;
-  width: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #2566d8;
-  margin: 0;
-  padding: 0;
-  z-index: 2;
-  transition: color 0.2s;
-}
-.toggle-password:hover {
-  color: #174ea6;
-  background: none;
-}
-.toggle-password svg {
-  display: block;
-  width: 22px;
-  height: 22px;
-  pointer-events: none;
-}
-.welcome-page {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 48px;
-}
-.welcome-title {
-  text-align: center;
-  font-size: 2rem;
-  font-weight: 600;
-  color: #222;
-  margin-bottom: 32px;
-}
-.welcome-cards {
-  display: flex;
-  gap: 32px;
-}
-.welcome-card {
-  background: #fff;
+
+.welcome-banner {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #fff;
+  padding: 2rem;
   border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  padding: 32px 40px;
-  min-width: 260px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  border: 1.5px solid #e3e6ef;
-}
-.welcome-icon {
-  width: 48px;
-  height: 48px;
-  background: #f5f6fa;
-  border-radius: 50%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.22);
 }
-.welcome-label {
-  font-size: 1.1rem;
-  color: #222;
-  margin-bottom: 8px;
+
+.welcome-banner h2 {
+  margin: 0 0 0.4rem 0;
+  font-size: 1.45rem;
 }
-.welcome-value {
-  font-size: 2rem;
-  color: #1abc9c;
+
+.welcome-banner p {
+  margin: 0;
+  opacity: 0.88;
+  font-size: 0.92rem;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.primary-action-btn {
+  padding: 0.65rem 1.2rem;
+  border-radius: 10px;
+  border: none;
+  background: #fff;
+  color: #4f46e5;
   font-weight: 600;
-  letter-spacing: 1px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
-@media (max-width: 900px) {
-  .welcome-cards {
-    flex-direction: column;
-    gap: 18px;
-    align-items: center;
-  }
-  .welcome-card {
-    min-width: 220px;
-    width: 90vw;
-    padding: 24px 10px;
-  }
+
+.primary-action-btn:hover {
+  transform: translateY(-1px);
 }
+
+.secondary-action-btn {
+  padding: 0.65rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.stat-value.stat-text {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.stat-meta {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.admin-footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sider-backdrop {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .admin-sider {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 70vw;
-    max-width: 260px;
-    height: 100vh;
-    z-index: 200;
     transform: translateX(-100%);
-    transition: transform 0.3s;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.12);
-    background: #fff;
+    transition: transform 0.25s ease;
   }
   .admin-sider.open {
     transform: translateX(0);
   }
+  .sider-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 90;
+  }
   .admin-main {
-    padding: 64px 0 0 0 !important;
-  }
-  .admin-header {
-    left: 0 !important;
-    width: 100vw !important;
-    min-width: 0 !important;
-    padding: 0 8px 0 8px !important;
-    box-sizing: border-box;
-    flex-wrap: nowrap;
-    height: 56px;
-  }
-  .header-title {
-    font-size: 1.1rem !important;
-    margin-left: 0 !important;
-    text-align: left !important;
-    width: auto !important;
-    flex: 1 1 auto;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    letter-spacing: 1px;
-  }
-  .header-actions {
-    gap: 4px;
     margin-left: 0;
   }
-  .btn.logout-btn {
-    padding: 4px 8px;
-    font-size: 13px;
-    border-radius: 8px;
-  }
   .menu-toggle {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    margin-right: 4px !important;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    cursor: pointer;
-    color: #2566d8;
-    z-index: 300;
+    display: inline-flex;
   }
-  /* 表单和按钮间距优化 */
-  .input, .btn {
-    margin-bottom: 8px;
+  .admin-header {
+    padding: 0 1rem;
+  }
+  .admin-content {
+    padding: 1.25rem 1rem;
   }
 }
-.menu-toggle {
-  display: none;
-}
-</style> 
+</style>

@@ -13,14 +13,17 @@ export const getMenus = () => axios.get(`${BASE}/menus`);
 export const addMenu = (data) => axios.post(`${BASE}/menus`, data, { headers: authHeaders() });
 export const updateMenu = (id, data) => axios.put(`${BASE}/menus/${id}`, data, { headers: authHeaders() });
 export const deleteMenu = (id) => axios.delete(`${BASE}/menus/${id}`, { headers: authHeaders() });
+export const reorderMenus = (items) => axios.put(`${BASE}/menus/reorder`, { items }, { headers: authHeaders() });
 
 // 子菜单相关API
 export const getSubMenus = (menuId) => axios.get(`${BASE}/menus/${menuId}/submenus`);
 export const addSubMenu = (menuId, data) => axios.post(`${BASE}/menus/${menuId}/submenus`, data, { headers: authHeaders() });
 export const updateSubMenu = (id, data) => axios.put(`${BASE}/menus/submenus/${id}`, data, { headers: authHeaders() });
 export const deleteSubMenu = (id) => axios.delete(`${BASE}/menus/submenus/${id}`, { headers: authHeaders() });
+export const reorderSubMenus = (items) => axios.put(`${BASE}/menus/submenus/reorder`, { items }, { headers: authHeaders() });
 
 // 卡片相关API
+export const getAllCards = () => axios.get(`${BASE}/cards`);
 export const getCards = (menuId, subMenuId = null) => {
   const params = subMenuId ? { subMenuId } : {};
   return axios.get(`${BASE}/cards/${menuId}`, { params });
@@ -28,6 +31,7 @@ export const getCards = (menuId, subMenuId = null) => {
 export const addCard = (data) => axios.post(`${BASE}/cards`, data, { headers: authHeaders() });
 export const updateCard = (id, data) => axios.put(`${BASE}/cards/${id}`, data, { headers: authHeaders() });
 export const deleteCard = (id) => axios.delete(`${BASE}/cards/${id}`, { headers: authHeaders() });
+export const reorderCards = (items) => axios.put(`${BASE}/cards/reorder`, { items }, { headers: authHeaders() });
 
 export const uploadLogo = (file) => {
   const formData = new FormData();
@@ -35,19 +39,24 @@ export const uploadLogo = (file) => {
   return axios.post(`${BASE}/upload`, formData, { headers: { ...authHeaders(), 'Content-Type': 'multipart/form-data' } });
 };
 
-// 广告API
-export const getAds = () => axios.get(`${BASE}/ads`);
-export const addAd = (data) => axios.post(`${BASE}/ads`, data, { headers: authHeaders() });
-export const updateAd = (id, data) => axios.put(`${BASE}/ads/${id}`, data, { headers: authHeaders() });
-export const deleteAd = (id) => axios.delete(`${BASE}/ads/${id}`, { headers: authHeaders() });
-
-// 友链API
-export const getFriends = () => axios.get(`${BASE}/friends`);
-export const addFriend = (data) => axios.post(`${BASE}/friends`, data, { headers: authHeaders() });
-export const updateFriend = (id, data) => axios.put(`${BASE}/friends/${id}`, data, { headers: authHeaders() });
-export const deleteFriend = (id) => axios.delete(`${BASE}/friends/${id}`, { headers: authHeaders() });
+// 背景管理相关API
+export const getBackgrounds = () => axios.get(`${BASE}/backgrounds`);
+export const getActiveBackground = () => axios.get(`${BASE}/backgrounds/active`);
+export const addBackground = (data) => axios.post(`${BASE}/backgrounds`, data, { headers: authHeaders() });
+export const updateBackground = (id, data) => axios.put(`${BASE}/backgrounds/${id}`, data, { headers: authHeaders() });
+export const activateBackground = (id) => axios.put(`${BASE}/backgrounds/${id}/activate`, {}, { headers: authHeaders() });
+export const deleteBackground = (id) => axios.delete(`${BASE}/backgrounds/${id}`, { headers: authHeaders() });
 
 // 用户API
 export const getUserProfile = () => axios.get(`${BASE}/users/profile`, { headers: authHeaders() });
+export const getCurrentUser = () => axios.get(`${BASE}/users/me`, { headers: authHeaders() });
 export const changePassword = (oldPassword, newPassword) => axios.put(`${BASE}/users/password`, { oldPassword, newPassword }, { headers: authHeaders() });
-export const getUsers = () => axios.get(`${BASE}/users`, { headers: authHeaders() }); 
+export const getUsers = () => axios.get(`${BASE}/users`, { headers: authHeaders() });
+
+// 搜索引擎配置相关API
+export const getSearchEngines = () => axios.get(`${BASE}/search-engines`);
+export const addSearchEngine = (data) => axios.post(`${BASE}/search-engines`, data, { headers: authHeaders() });
+export const updateSearchEngine = (id, data) => axios.put(`${BASE}/search-engines/${id}`, data, { headers: authHeaders() });
+export const setDefaultSearchEngine = (id) => axios.put(`${BASE}/search-engines/${id}/default`, {}, { headers: authHeaders() });
+export const reorderSearchEngines = (items) => axios.put(`${BASE}/search-engines/reorder`, { items }, { headers: authHeaders() });
+export const deleteSearchEngine = (id) => axios.delete(`${BASE}/search-engines/${id}`, { headers: authHeaders() });

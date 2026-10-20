@@ -1,101 +1,101 @@
 <template>
   <div class="menu-manage">
-    <div class="menu-header">
-      <div class="header-content">
-        <h2 class="page-title">管理主菜单和子菜单</h2>
+    <div class="top-bar">
+      <div>
+        <h2 class="section-heading">栏目分类管理（支持拖拽排序）</h2>
+        <p class="section-sub">直接按住左侧拖拽手柄 ⠿ 即可上下拖动调整主菜单与二级子菜单顺序，松手自动保存</p>
       </div>
-      <div class="menu-add">
-        <input v-model="newMenuName" placeholder="请输入主菜单名称" class="input" />
-        <button class="btn btn-primary" @click="addMenu">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          添加主菜单
-        </button>
-      </div>
+      <form class="menu-add" @submit.prevent="addMenu">
+        <input v-model="newMenuName" placeholder="输入新主菜单名称..." class="input" />
+        <button type="submit" class="btn btn-primary">+ 新增主菜单</button>
+      </form>
     </div>
-    
-    <div class="menu-content">
-      <div class="menu-list">
-        <div v-for="menu in menus" :key="menu.id" class="menu-item">
-          <!-- 主菜单 -->
-          <div class="main-menu">
-            <div class="menu-info">
-              <div class="menu-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
-                </svg>
-              </div>
-              <input v-model="menu.name" @blur="updateMenu(menu)" class="menu-name-input" />
-              <div class="menu-order">
-                <span class="order-label">排序</span>
-                <input v-model.number="menu.order" type="number" @blur="updateMenu(menu)" class="order-input" />
-              </div>
+
+    <div class="menu-list">
+      <div
+        v-for="(menu, mIdx) in menus"
+        :key="menu.id"
+        class="menu-card"
+        :class="{
+          'is-dragging': dragMenuIndex === mIdx,
+          'is-drag-over': dragOverMenuIndex === mIdx && dragMenuIndex !== mIdx
+        }"
+        draggable="true"
+        @dragstart="onMenuDragStart($event, mIdx)"
+        @dragover.prevent="onMenuDragOver($event, mIdx)"
+        @drop.prevent="onMenuDrop($event, mIdx)"
+        @dragend="onMenuDragEnd"
+      >
+        <div class="main-menu-row">
+          <div class="menu-info">
+            <span class="drag-handle" title="按住上下拖动排序">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/>
+                <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
+                <circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/>
+              </svg>
+            </span>
+            <span class="menu-badge">#{{ mIdx + 1 }}</span>
+            <input v-model="menu.name" class="name-input" @blur="updateMenu(menu)" />
+          </div>
+
+          <div class="menu-actions">
+            <div class="move-btns">
+              <button type="button" class="btn-move" :disabled="mIdx === 0" title="上移" @click="moveMenu(mIdx, -1)">↑</button>
+              <button type="button" class="btn-move" :disabled="mIdx === menus.length - 1" title="下移" @click="moveMenu(mIdx, 1)">↓</button>
             </div>
-            <div class="menu-actions">
-              <button class="btn btn-icon expand-btn" @click="toggleSubMenu(menu.id)" :title="menu.showSubMenu ? '收起子菜单' : '展开子菜单'">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m6 9 6 6 6-6"/>
+            <button type="button" class="btn btn-ghost" @click="toggleSubMenu(menu.id)">
+              <span>子菜单 ({{ menu.subMenus?.length || 0 }})</span>
+              <svg :class="{ rotated: menu.showSubMenu }" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <button type="button" class="btn btn-danger-outline" @click="deleteMenu(menu.id)">删除</button>
+          </div>
+        </div>
+
+        <!-- 二级子菜单区域（同样支持拖拽排序） -->
+        <div v-if="menu.showSubMenu" class="submenu-panel">
+          <div class="submenu-add-row">
+            <input
+              v-model="subMenuDrafts[menu.id]"
+              placeholder="输入新子菜单名称..."
+              class="input input-sm"
+              @keyup.enter="addSubMenu(menu.id)"
+            />
+            <button type="button" class="btn btn-sm btn-primary" @click="addSubMenu(menu.id)">+ 添加子菜单</button>
+          </div>
+
+          <div v-if="menu.subMenus && menu.subMenus.length > 0" class="submenu-items">
+            <div
+              v-for="(sub, sIdx) in menu.subMenus"
+              :key="sub.id"
+              class="submenu-row"
+              :class="{
+                'is-dragging': dragSubInfo.menuId === menu.id && dragSubInfo.index === sIdx,
+                'is-drag-over': dragSubInfo.menuId === menu.id && dragSubInfo.overIndex === sIdx && dragSubInfo.index !== sIdx
+              }"
+              draggable="true"
+              @dragstart.stop="onSubDragStart($event, menu.id, sIdx)"
+              @dragover.prevent.stop="onSubDragOver($event, menu.id, sIdx)"
+              @drop.prevent.stop="onSubDrop($event, menu, sIdx)"
+              @dragend.stop="onSubDragEnd"
+            >
+              <span class="drag-handle sub-handle" title="按住拖动调整子菜单顺序">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/>
+                  <circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/>
+                  <circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/>
                 </svg>
-              </button>
-              <button class="btn btn-danger btn-icon" @click="deleteMenu(menu.id)" title="删除主菜单">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                  <path d="M10 11v6M14 11v6"/>
-                </svg>
-              </button>
+              </span>
+              <span class="sub-badge">{{ sIdx + 1 }}</span>
+              <input v-model="sub.name" class="name-input sub-name" @blur="updateSubMenu(sub)" />
+              <div class="move-btns">
+                <button type="button" class="btn-move" :disabled="sIdx === 0" title="上移" @click="moveSubMenu(menu, sIdx, -1)">↑</button>
+                <button type="button" class="btn-move" :disabled="sIdx === menu.subMenus.length - 1" title="下移" @click="moveSubMenu(menu, sIdx, 1)">↓</button>
+              </div>
+              <button type="button" class="btn btn-sm btn-danger-outline" @click="deleteSubMenu(sub.id)">删除</button>
             </div>
           </div>
-          
-          <!-- 子菜单区域 -->
-          <div class="sub-menu-section" :class="{ 'expanded': menu.showSubMenu }">
-            <div class="sub-menu-header">
-              <div class="sub-menu-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 11H1l8-8 8 8h-8v8z"/>
-                </svg>
-                子菜单 ({{ menu.subMenus?.length || 0 }})
-              </div>
-              <button class="btn btn-sm btn-outline" @click="addSubMenu(menu.id)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-                添加子菜单
-              </button>
-            </div>
-            
-            <div class="sub-menu-list" v-if="menu.subMenus && menu.subMenus.length > 0">
-              <div v-for="subMenu in menu.subMenus" :key="subMenu.id" class="sub-menu-item">
-                <div class="sub-menu-info">
-                  <div class="sub-menu-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                  </div>
-                  <input v-model="subMenu.name" @blur="updateSubMenu(subMenu)" class="sub-menu-name-input" />
-                  <div class="sub-menu-order">
-                    <input v-model.number="subMenu.order" type="number" @blur="updateSubMenu(subMenu)" class="order-input" />
-                  </div>
-                </div>
-                <div class="sub-menu-actions">
-                  <button class="btn btn-danger btn-icon btn-sm" @click="deleteSubMenu(subMenu.id)" title="删除子菜单">
-                    <svg width="14" height="14" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
-                      <path d="M10 11v6M14 11v6"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else class="empty-sub-menu">
-              <!-- <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <path d="M9 11H1l8-8 8 8h-8v8z"/>
-              </svg> -->
-              <p>暂无子菜单</p>
-              <button class="btn btn-sm btn-outline" @click="addSubMenu(menu.id)">添加第一个子菜单</button>
-            </div>
-          </div>
+          <p v-else class="empty-hint">当前主菜单下暂无二级子菜单</p>
         </div>
       </div>
     </div>
@@ -103,560 +103,466 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { 
-  getMenus, 
-  addMenu as apiAddMenu, 
-  updateMenu as apiUpdateMenu, 
+import { ref, reactive, onMounted } from 'vue';
+import {
+  getMenus,
+  addMenu as apiAddMenu,
+  updateMenu as apiUpdateMenu,
   deleteMenu as apiDeleteMenu,
+  reorderMenus as apiReorderMenus,
   addSubMenu as apiAddSubMenu,
   updateSubMenu as apiUpdateSubMenu,
-  deleteSubMenu as apiDeleteSubMenu
+  deleteSubMenu as apiDeleteSubMenu,
+  reorderSubMenus as apiReorderSubMenus
 } from '../../api';
 
 const menus = ref([]);
 const newMenuName = ref('');
+const subMenuDrafts = reactive({});
+
+// 主菜单拖拽状态
+const dragMenuIndex = ref(null);
+const dragOverMenuIndex = ref(null);
+
+// 子菜单拖拽状态
+const dragSubInfo = reactive({
+  menuId: null,
+  index: null,
+  overIndex: null
+});
 
 onMounted(loadMenus);
 
 async function loadMenus() {
+  const expandedMap = {};
+  menus.value.forEach(m => { expandedMap[m.id] = m.showSubMenu; });
   const res = await getMenus();
   menus.value = res.data.map(menu => ({
     ...menu,
-    showSubMenu: false // 添加展开状态
+    showSubMenu: expandedMap[menu.id] ?? false
   }));
+}
+
+// 主菜单拖拽事件
+function onMenuDragStart(e, index) {
+  dragMenuIndex.value = index;
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onMenuDragOver(e, index) {
+  if (dragMenuIndex.value === null) return;
+  dragOverMenuIndex.value = index;
+}
+
+async function onMenuDrop(e, targetIndex) {
+  if (dragMenuIndex.value === null || dragMenuIndex.value === targetIndex) {
+    onMenuDragEnd();
+    return;
+  }
+  const list = [...menus.value];
+  const [moved] = list.splice(dragMenuIndex.value, 1);
+  list.splice(targetIndex, 0, moved);
+  list.forEach((m, idx) => { m.order = idx + 1; });
+  menus.value = list;
+  onMenuDragEnd();
+  await persistMenuOrder();
+}
+
+function onMenuDragEnd() {
+  dragMenuIndex.value = null;
+  dragOverMenuIndex.value = null;
+}
+
+async function moveMenu(index, delta) {
+  const target = index + delta;
+  if (target < 0 || target >= menus.value.length) return;
+  const list = [...menus.value];
+  const [moved] = list.splice(index, 1);
+  list.splice(target, 0, moved);
+  list.forEach((m, idx) => { m.order = idx + 1; });
+  menus.value = list;
+  await persistMenuOrder();
+}
+
+async function persistMenuOrder() {
+  const items = menus.value.map((m, idx) => ({ id: m.id, order: idx + 1 }));
+  await apiReorderMenus(items);
+}
+
+// 子菜单拖拽事件
+function onSubDragStart(e, menuId, sIdx) {
+  dragSubInfo.menuId = menuId;
+  dragSubInfo.index = sIdx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onSubDragOver(e, menuId, sIdx) {
+  if (dragSubInfo.menuId !== menuId) return;
+  dragSubInfo.overIndex = sIdx;
+}
+
+async function onSubDrop(e, menu, targetIdx) {
+  if (dragSubInfo.menuId !== menu.id || dragSubInfo.index === null || dragSubInfo.index === targetIdx) {
+    onSubDragEnd();
+    return;
+  }
+  const subs = [...(menu.subMenus || [])];
+  const [moved] = subs.splice(dragSubInfo.index, 1);
+  subs.splice(targetIdx, 0, moved);
+  subs.forEach((s, idx) => { s.order = idx + 1; });
+  menu.subMenus = subs;
+  onSubDragEnd();
+  await persistSubMenuOrder(menu);
+}
+
+function onSubDragEnd() {
+  dragSubInfo.menuId = null;
+  dragSubInfo.index = null;
+  dragSubInfo.overIndex = null;
+}
+
+async function moveSubMenu(menu, sIdx, delta) {
+  const subs = [...(menu.subMenus || [])];
+  const target = sIdx + delta;
+  if (target < 0 || target >= subs.length) return;
+  const [moved] = subs.splice(sIdx, 1);
+  subs.splice(target, 0, moved);
+  subs.forEach((s, idx) => { s.order = idx + 1; });
+  menu.subMenus = subs;
+  await persistSubMenuOrder(menu);
+}
+
+async function persistSubMenuOrder(menu) {
+  const items = (menu.subMenus || []).map((s, idx) => ({ id: s.id, order: idx + 1 }));
+  await apiReorderSubMenus(items);
 }
 
 async function addMenu() {
   if (!newMenuName.value.trim()) return;
-  const maxOrder = menus.value.length
-    ? Math.max(...menus.value.map(m => m.order || 0))
-    : 0;
+  const maxOrder = menus.value.length ? Math.max(...menus.value.map(m => m.order || 0)) : 0;
   await apiAddMenu({ name: newMenuName.value.trim(), order: maxOrder + 1 });
   newMenuName.value = '';
-  loadMenus();
+  await loadMenus();
 }
 
 async function updateMenu(menu) {
   await apiUpdateMenu(menu.id, { name: menu.name, order: menu.order });
-  loadMenus();
+  await loadMenus();
 }
 
 async function deleteMenu(id) {
-  if (!confirm('确定要删除这个主菜单吗？删除后将同时删除其下的所有子菜单和卡片。')) return;
   await apiDeleteMenu(id);
-  loadMenus();
+  await loadMenus();
 }
 
 async function addSubMenu(menuId) {
+  const draft = (subMenuDrafts[menuId] || '').trim();
+  if (!draft) return;
   const menu = menus.value.find(m => m.id === menuId);
-  const subMenuName = prompt('请输入子菜单名称：');
-  if (!subMenuName?.trim()) return;
-  
-  const maxOrder = menu.subMenus?.length
-    ? Math.max(...menu.subMenus.map(sm => sm.order || 0))
-    : 0;
-    
-  await apiAddSubMenu(menuId, { name: subMenuName.trim(), order: maxOrder + 1 });
-  loadMenus();
+  const maxOrder = menu?.subMenus?.length ? Math.max(...menu.subMenus.map(s => s.order || 0)) : 0;
+  await apiAddSubMenu(menuId, { name: draft, order: maxOrder + 1 });
+  subMenuDrafts[menuId] = '';
+  await loadMenus();
 }
 
 async function updateSubMenu(subMenu) {
   await apiUpdateSubMenu(subMenu.id, { name: subMenu.name, order: subMenu.order });
-  loadMenus();
+  await loadMenus();
 }
 
 async function deleteSubMenu(id) {
-  if (!confirm('确定要删除这个子菜单吗？删除后将同时删除其下的所有卡片。')) return;
   await apiDeleteSubMenu(id);
-  loadMenus();
+  await loadMenus();
 }
 
 function toggleSubMenu(menuId) {
   const menu = menus.value.find(m => m.id === menuId);
-  if (menu) {
-    menu.showSubMenu = !menu.showSubMenu;
-  }
+  if (menu) menu.showSubMenu = !menu.showSubMenu;
 }
 </script>
 
 <style scoped>
 .menu-manage {
-  max-width: 1200px;
-  width: 95%;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 1.5rem;
 }
 
-
-
-.menu-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.top-bar {
+  background: #fff;
+  padding: 1.5rem;
   border-radius: 16px;
-  padding: 32px;
-  margin-bottom: 20px;
-  color: white;
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-  width: 94%;
-  text-align: center;
-}
-
-.header-content {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.5px;
-}
-
-
-
-.menu-add {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center;
-}
-
-.menu-content {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  width: 100%;
-}
-
-.menu-list {
-  padding: 0;
-}
-
-.menu-item {
-  border-bottom: 1px solid #f1f5f9;
-  transition: all 0.3s ease;
-}
-
-.menu-item:last-child {
-  border-bottom: none;
-}
-
-.menu-item:hover {
-  background: #f8fafc;
-}
-
-.main-menu {
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 32px;
-  background: white;
-  transition: all 0.3s ease;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.section-heading {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.section-sub {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #64748b;
+}
+
+.menu-add {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.input {
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.9rem;
+  outline: none;
+  min-width: 220px;
+}
+
+.input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.input-sm {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.menu-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+}
+
+.menu-card.is-dragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+}
+
+.menu-card.is-drag-over {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.main-menu-row {
+  padding: 0.95rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .menu-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0.75rem;
   flex: 1;
 }
 
-.menu-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  display: flex;
+.drag-handle {
+  cursor: grab;
+  color: #94a3b8;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  flex-shrink: 0;
-}
-
-.menu-name-input {
-  font-size: 1.1rem;
-  font-weight: 600;
-  border: 2px solid transparent;
-  background: transparent;
-  padding: 8px 12px;
-  border-radius: 8px;
-  color: #1e293b;
-  min-width: 200px;
-  transition: all 0.2s ease;
-}
-
-.menu-name-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: #f8fafc;
-}
-
-.menu-order {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.order-label {
-  font-size: 0.9rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.order-input {
-  width: 60px;
-  padding: 6px 8px;
-  border: 1px solid #e2e8f0;
+  padding: 0.25rem;
   border-radius: 6px;
-  text-align: center;
-  font-size: 0.9rem;
+  transition: color 0.15s, background 0.15s;
 }
 
-.order-input:focus {
+.drag-handle:hover {
+  color: #4f46e5;
+  background: #eef2ff;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.menu-badge {
+  background: #eef2ff;
+  color: #4f46e5;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+}
+
+.name-input {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+  border: 1px solid transparent;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.name-input:hover, .name-input:focus {
+  border-color: #cbd5e1;
+  background: #f8fafc;
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .menu-actions {
   display: flex;
-  gap: 8px;
-}
-
-.sub-menu-section {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  max-height: 0;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.sub-menu-section.expanded {
-  max-height: 1000px;
-}
-
-.sub-menu-header {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 32px;
-  background: #f1f5f9;
-  border-bottom: 1px solid #e2e8f0;
+  gap: 0.5rem;
 }
 
-.sub-menu-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: #475569;
-  font-size: 0.95rem;
+.move-btns {
+  display: inline-flex;
+  gap: 0.25rem;
 }
 
-.sub-menu-list {
-  padding: 16px 32px 16px 48px;
-  position: relative;
-}
-
-.sub-menu-list::before {
-  content: '';
-  position: absolute;
-  left: 32px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: linear-gradient(to bottom, #e2e8f0, #cbd5e1);
-  border-radius: 1px;
-}
-
-.sub-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 20px;
-  background: white;
-  border-radius: 12px;
-  margin-bottom: 5px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+.btn-move {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-  position: relative;
-}
-
-.sub-menu-item::before {
-  content: '';
-  position: absolute;
-  left: -16px;
-  top: 50%;
-  width: 12px;
-  height: 2px;
-  background: #cbd5e1;
-  transform: translateY(-50%);
-  border-radius: 1px;
-}
-
-.sub-menu-item:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-
-.sub-menu-item:last-child {
-  margin-bottom: 0;
-}
-
-.sub-menu-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-}
-
-.sub-menu-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  border-radius: 8px;
-  display: flex;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  flex-shrink: 0;
+  transition: all 0.15s;
 }
 
-.sub-menu-name-input {
-  font-size: 1rem;
-  border: 2px solid transparent;
-  background: transparent;
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: #374151;
-  min-width: 150px;
-  transition: all 0.2s ease;
+.btn-move:hover:not(:disabled) {
+  border-color: #6366f1;
+  color: #4f46e5;
+  background: #eef2ff;
 }
 
-.sub-menu-name-input:focus {
-  outline: none;
-  border-color: #10b981;
-  background: #f0fdf4;
+.btn-move:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
-.sub-menu-order {
-  display: flex;
-  align-items: center;
-}
-
-.sub-menu-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.empty-sub-menu {
-  padding: 10px 0px 10px 0px;
-  text-align: center;
-  color: #64748b;
-}
-
-.empty-sub-menu p {
-  color: #079f1e;
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-}
-
-/* 按钮样式 */
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-decoration: none;
-}
-
-.btn-primary {
-  background: linear-gradient(82deg, #667eea, #2f025d);
-  color: white;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.btn-outline {
-  background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
-}
-
-.btn-outline:hover {
-  background: #667eea;
-  color: white;
-}
-
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-}
-
-.btn-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-}
-
-.btn-icon {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-/* 展开子菜单按钮样式 */
-.btn-icon.expand-btn {
-  width: 200px;
-  height: 36px;
+  border: none;
+  transition: all 0.2s;
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
 }
 
-.btn-icon.btn-sm {
-  width: 35px;
-  height: 30px;
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
 }
 
-.input {
-  padding: 12px 16px;
+.btn-ghost {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.btn-ghost:hover {
+  background: #e2e8f0;
+}
+
+.btn-danger-outline {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn-danger-outline:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+.submenu-panel {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem 1.25rem;
+}
+
+.submenu-add-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.submenu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.submenu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  background: #fff;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
   border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1rem;
-  background: white;
-  color: #1e293b;
-  transition: all 0.2s ease;
-  min-width: 200px;
+  transition: all 0.15s ease;
 }
 
-.input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+.submenu-row.is-dragging {
+  opacity: 0.45;
 }
 
-.input::placeholder {
+.submenu-row.is-drag-over {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+.sub-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+}
+
+.sub-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 0.84rem;
   color: #94a3b8;
 }
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .menu-manage {
-    width: 93%;
-    padding: 16px;
-  }
-  
-  .menu-header {
-    padding: 24px 20px;
-  }
-  
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
-  .menu-add {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .input {
-    min-width: 0;
-  }
-  
-  .main-menu {
-    padding: 20px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-  
-  .menu-info {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .menu-name-input {
-    min-width: 0;
-  }
-  
-  .menu-order {
-    justify-content: center;
-  }
-  
-  .menu-actions {
-    justify-content: center;
-  }
-  
-  .btn-icon.expand-btn {
-    width: 40px;
-    height: 32px;
-  }
-  
-  .sub-menu-header {
-    padding: 16px 20px;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-  
-  .sub-menu-list {
-    padding: 12px 20px 12px 32px;
-  }
-  
-  .sub-menu-list::before {
-    left: 20px;
-  }
-  
-  .sub-menu-item::before {
-    left: -12px;
-    width: 8px;
-  }
-  
-  .sub-menu-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .sub-menu-info {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  
-  .sub-menu-name-input {
-    min-width: 0;
-  }
-  
-  .sub-menu-order {
-    justify-content: center;
-  }
-  
-  .sub-menu-actions {
-    justify-content: center;
-  }
-  
-  .empty-sub-menu {
-    padding: 10px 0px 10px 0px;
-  }
-}
-</style> 
+</style>

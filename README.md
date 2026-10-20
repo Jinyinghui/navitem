@@ -119,7 +119,8 @@ nav-item/
 git clone https://github.com/Jinyinghui/nav-item.git
 cd nav-item
 
-# 2. 按需修改 docker-compose.yml 中的环境变量（端口、管理员账号密码，见下方「环境变量配置」）
+# 2. 准备环境变量：复制模板并填入管理员账号、密码等配置（见下方「环境变量配置」）
+cp .env.example .env
 
 # 3. 一键拉起服务（后台运行）
 docker compose up -d
@@ -137,7 +138,7 @@ docker compose pull          # 拉取最新镜像
 docker compose up -d         # 拉取后重新拉起，即完成升级
 ```
 
-> ⚠️ **安全提示**：`docker-compose.yml` 中的 `ADMIN_PASSWORD` 等敏感配置请勿使用默认值或真实密码提交到公开仓库，建议改用同目录下的 `.env` 文件注入并将 `.env` 加入 `.gitignore`。
+> ⚠️ **安全提示**：管理员密码、JWT 密钥等敏感配置统一写在同目录的 `.env` 文件中（`docker-compose.yml` 通过 `${...}` 变量引用），`.env` 已加入 `.gitignore`，切勿把真实值写回 `docker-compose.yml` 或提交到仓库。
 
 ### 方式二：Docker 构建镜像部署
 

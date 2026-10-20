@@ -2,7 +2,7 @@ require('dotenv').config();
 
 module.exports = {
   admin: {
-    username: process.env.ADMIN_USERNAME || 'yaohuiadmin',
+    username: process.env.ADMIN_USERNAME || 'admin',
     password: process.env.ADMIN_PASSWORD || '123456'
   },
   server: {

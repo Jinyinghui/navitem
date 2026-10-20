@@ -54,10 +54,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ steps.vars.outputs.owner_lower }}/nav-item:latest
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/navitem:latest
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=nav-item
+            org.opencontainers.image.description=navitem
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=maxtype=gha,mode=max

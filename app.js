@@ -17,6 +17,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(compression());
+// 图标文件名是内容/链接哈希（图变名变），可长缓存；其余 uploads（背景图等）保持默认协商缓存
+app.use('/uploads/icons', express.static(path.join(__dirname, 'uploads', 'icons'), { maxAge: '30d', immutable: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'web/dist')));
 

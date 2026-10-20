@@ -268,13 +268,13 @@
               </div>
 
 <!-- Clock & Weather Row -->
-<div class="w-full max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 select-none">
+<div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-5 select-none">
   <div class="glass-card rounded-2xl px-5 py-3 text-center sm:text-left">
       <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
       <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
     </div>
   <!-- Hitokoto Widget (时钟与天气之间) -->
-  <div class="glass-card rounded-2xl px-4 py-3 flex-1 w-full sm:w-auto min-w-0">
+  <div class="glass-card rounded-2xl px-4 py-3 min-w-0">
       <div class="flex items-center gap-2">
         <span class="text-xs font-bold shrink-0">💬 一言</span>
         <span class="flex-1 text-[11px] text-slate-400 truncate text-right">—— {{ hitokoto.from }}</span>
@@ -290,7 +290,7 @@
     </div>
   <div class="relative">
                   <div
-                    class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer"
+                    class="glass-card rounded-2xl px-4 py-2.5 flex items-center gap-3 cursor-pointer h-full w-full"
                     title="点击切换城市或使用自动定位"
                     @click.stop="showWeatherPicker = !showWeatherPicker"
                   >

@@ -116,8 +116,8 @@ nav-item/
 
 ```bash
 # 1. 克隆仓库并进入项目目录
-git clone https://github.com/Jinyinghui/nav-item.git
-cd nav-item
+git clone https://github.com/Jinyinghui/navitem.git
+cd navitem
 
 # 2. 准备环境变量：复制模板并填入管理员账号、密码等配置（见下方「环境变量配置」）
 cp .env.example .env
@@ -169,8 +169,8 @@ docker run -d \
 
 ```bash
 # 1. 克隆仓库并进入项目目录
-git clone https://github.com/Jinyinghui/nav-item.git
-cd nav-item
+git clone https://github.com/Jinyinghui/navitem.git
+cd navitem
 
 # 2. 安装后端依赖
 npm install

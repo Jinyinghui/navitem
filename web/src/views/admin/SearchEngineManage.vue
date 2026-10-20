@@ -33,7 +33,7 @@
           <tr
             v-for="(eng, idx) in engines"
             :key="eng.id"
-            draggable="true"
+            :draggable="dragHandleIdx === idx"
             class="hover:bg-slate-900/40 transition"
             :class="{
               'is-dragging': dragIdx === idx,
@@ -46,7 +46,15 @@
           >
             <td class="py-2.5 px-4">
               <div class="flex items-center gap-1.5">
-                <span class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition" title="按住上下拖动调整搜索引擎顺序">
+                <span
+                  class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition"
+                  title="按住上下拖动调整搜索引擎顺序"
+                  @mousedown.stop="onHandlePress(idx)"
+                  @touchstart.stop="onHandlePress(idx)"
+                  @mouseup.stop="onHandleRelease"
+                  @mouseleave="onHandleRelease"
+                  @touchend.stop="onHandleRelease"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
                     <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
@@ -86,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import {
   getSearchEngines,
   addSearchEngine,
@@ -104,8 +112,18 @@ const newPlaceholder = ref('');
 
 const dragIdx = ref(null);
 const dragOverIdx = ref(null);
+const dragHandleIdx = ref(null);
 
-onMounted(loadEngines);
+onMounted(() => {
+  loadEngines();
+  window.addEventListener('mouseup', onHandleRelease);
+  window.addEventListener('touchend', onHandleRelease);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mouseup', onHandleRelease);
+  window.removeEventListener('touchend', onHandleRelease);
+});
 
 async function loadEngines() {
   try {
@@ -165,7 +183,19 @@ async function removeEngine(id) {
   } catch (e) {}
 }
 
+function onHandlePress(idx) {
+  dragHandleIdx.value = idx;
+}
+
+function onHandleRelease() {
+  dragHandleIdx.value = null;
+}
+
 function onDragStart(e, idx) {
+  if (dragHandleIdx.value !== idx) {
+    e.preventDefault();
+    return;
+  }
   dragIdx.value = idx;
   e.dataTransfer.effectAllowed = 'move';
 }
@@ -192,6 +222,7 @@ async function onDrop(e, targetIdx) {
 function onDragEnd() {
   dragIdx.value = null;
   dragOverIdx.value = null;
+  dragHandleIdx.value = null;
 }
 
 async function moveEngine(idx, delta) {

@@ -15,7 +15,7 @@
       <div
         v-for="(menu, mIdx) in menus"
         :key="menu.id"
-        draggable="true"
+        :draggable="menuHandleDragIdx === mIdx"
         class="bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden transition"
         :class="{
           'is-dragging': dragMenuIdx === mIdx,
@@ -28,7 +28,15 @@
       >
         <div class="p-4 flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-3 flex-1 min-w-[200px]">
-            <span class="drag-handle p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition" title="按住上下拖动调整主菜单顺序">
+            <span
+              class="drag-handle p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition"
+              title="按住上下拖动调整主菜单顺序"
+              @mousedown.stop="onMenuHandlePress(mIdx)"
+              @touchstart.stop="onMenuHandlePress(mIdx)"
+              @mouseup.stop="onHandleRelease"
+              @mouseleave="onHandleRelease"
+              @touchend.stop="onHandleRelease"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/>
                 <circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/>
@@ -66,14 +74,23 @@
             <div
               v-for="(sub, sIdx) in menu.subMenus"
               :key="sub.id"
-              draggable="true"
+              :draggable="isSubDragEnabled(menu.id, sIdx)"
               class="flex items-center justify-between gap-2 bg-slate-900 border-2 border-slate-800/80 rounded-xl px-3.5 py-2 transition"
               @dragstart.stop="onSubDragStart($event, menu.id, sIdx)"
               @dragover.prevent.stop
               @drop.prevent.stop="onSubDrop($event, menu, sIdx)"
+              @dragend="onSubDragEnd"
             >
               <div class="flex items-center gap-2.5 flex-1">
-                <span class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition" title="按住拖动调整子菜单顺序">
+                <span
+                  class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition"
+                  title="按住拖动调整子菜单顺序"
+                  @mousedown.stop="onSubHandlePress(menu.id, sIdx)"
+                  @touchstart.stop="onSubHandlePress(menu.id, sIdx)"
+                  @mouseup.stop="onHandleRelease"
+                  @mouseleave="onHandleRelease"
+                  @touchend.stop="onHandleRelease"
+                >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
                     <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
@@ -98,7 +115,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 import {
   getMenus,
   addMenu,
@@ -118,9 +135,20 @@ const newSubNames = reactive({});
 
 const dragMenuIdx = ref(null);
 const dragOverMenuIdx = ref(null);
+const menuHandleDragIdx = ref(null);
 const dragSubState = reactive({ parentId: null, subIdx: null });
+const subHandleDragState = reactive({ parentId: null, subIdx: null });
 
-onMounted(loadMenus);
+onMounted(() => {
+  loadMenus();
+  window.addEventListener('mouseup', onHandleRelease);
+  window.addEventListener('touchend', onHandleRelease);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mouseup', onHandleRelease);
+  window.removeEventListener('touchend', onHandleRelease);
+});
 
 async function loadMenus() {
   try {
@@ -167,7 +195,30 @@ async function removeSub(menu, subId) {
   await loadMenus();
 }
 
+function onMenuHandlePress(idx) {
+  menuHandleDragIdx.value = idx;
+}
+
+function onSubHandlePress(parentId, idx) {
+  subHandleDragState.parentId = parentId;
+  subHandleDragState.subIdx = idx;
+}
+
+function isSubDragEnabled(parentId, idx) {
+  return subHandleDragState.parentId === parentId && subHandleDragState.subIdx === idx;
+}
+
+function onHandleRelease() {
+  menuHandleDragIdx.value = null;
+  subHandleDragState.parentId = null;
+  subHandleDragState.subIdx = null;
+}
+
 function onMenuDragStart(e, idx) {
+  if (menuHandleDragIdx.value !== idx) {
+    e.preventDefault();
+    return;
+  }
   dragMenuIdx.value = idx;
   e.dataTransfer.effectAllowed = 'move';
 }
@@ -191,6 +242,7 @@ async function onMenuDrop(e, targetIdx) {
 function onMenuDragEnd() {
   dragMenuIdx.value = null;
   dragOverMenuIdx.value = null;
+  menuHandleDragIdx.value = null;
 }
 
 async function moveMenu(idx, dir) {
@@ -205,19 +257,31 @@ async function moveMenu(idx, dir) {
 }
 
 function onSubDragStart(e, parentId, sIdx) {
+  if (!isSubDragEnabled(parentId, sIdx)) {
+    e.preventDefault();
+    return;
+  }
   dragSubState.parentId = parentId;
   dragSubState.subIdx = sIdx;
 }
 async function onSubDrop(e, menu, targetIdx) {
-  if (dragSubState.parentId !== menu.id || dragSubState.subIdx === null || dragSubState.subIdx === targetIdx) return;
+  if (dragSubState.parentId !== menu.id || dragSubState.subIdx === null || dragSubState.subIdx === targetIdx) {
+    onSubDragEnd();
+    return;
+  }
   const subs = [...(menu.subMenus || [])];
   const [moved] = subs.splice(dragSubState.subIdx, 1);
   subs.splice(targetIdx, 0, moved);
   subs.forEach((s, i) => { s.order = i + 1; });
   menu.subMenus = subs;
+  onSubDragEnd();
+  await reorderSubMenus(subs.map((s, i) => ({ id: s.id, order: i + 1 })));
+}
+function onSubDragEnd() {
   dragSubState.parentId = null;
   dragSubState.subIdx = null;
-  await reorderSubMenus(subs.map((s, i) => ({ id: s.id, order: i + 1 })));
+  subHandleDragState.parentId = null;
+  subHandleDragState.subIdx = null;
 }
 async function moveSub(menu, sIdx, dir) {
   const subs = [...(menu.subMenus || [])];

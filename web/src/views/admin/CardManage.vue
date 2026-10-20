@@ -47,15 +47,23 @@
           <tr
             v-for="(card, cIdx) in displayedCards"
             :key="card.id"
-            :draggable="!filterKeyword"
+            :draggable="isDragEnabled(cIdx)"
             class="hover:bg-slate-900/40 transition"
             @dragstart="onDragStart($event, cIdx)"
             @dragover.prevent
             @drop.prevent="onDrop($event, cIdx)"
+            @dragend="onDragEnd"
           >
             <td class="py-2.5 px-4">
               <div class="flex items-center gap-1.5">
-                <span class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition">
+                <span
+                  class="drag-handle p-1 rounded text-slate-500 hover:text-indigo-400 transition"
+                  @mousedown.stop="onHandlePress(cIdx)"
+                  @touchstart.stop="onHandlePress(cIdx)"
+                  @mouseup.stop="onHandleRelease"
+                  @mouseleave="onHandleRelease"
+                  @touchend.stop="onHandleRelease"
+                >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/>
                     <circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/>
@@ -96,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { getMenus, getCards, addCard, updateCard, deleteCard, reorderCards } from '../../api';
 
 const menus = ref([]);
@@ -110,6 +118,7 @@ const newUrl = ref('');
 const newDesc = ref('');
 const newLogo = ref('');
 const dragIdx = ref(null);
+const dragHandleIdx = ref(null);
 
 const currentSubMenus = computed(() => {
   const m = menus.value.find(x => x.id === selectedMenuId.value);
@@ -127,12 +136,19 @@ const displayedCards = computed(() => {
 });
 
 onMounted(async () => {
+  window.addEventListener('mouseup', onHandleRelease);
+  window.addEventListener('touchend', onHandleRelease);
   const res = await getMenus();
   menus.value = res.data || [];
   if (menus.value.length) {
     selectedMenuId.value = menus.value[0].id;
     await loadCards();
   }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('mouseup', onHandleRelease);
+  window.removeEventListener('touchend', onHandleRelease);
 });
 
 async function onMenuChange() {
@@ -173,19 +189,44 @@ async function removeCard(id) {
   await loadCards();
 }
 
+function onHandlePress(idx) {
+  if (filterKeyword.value) return;
+  dragHandleIdx.value = idx;
+}
+
+function onHandleRelease() {
+  dragHandleIdx.value = null;
+}
+
+function isDragEnabled(idx) {
+  return !filterKeyword.value && dragHandleIdx.value === idx;
+}
+
 function onDragStart(e, idx) {
+  if (!isDragEnabled(idx)) {
+    e.preventDefault();
+    return;
+  }
   dragIdx.value = idx;
 }
 
 async function onDrop(e, targetIdx) {
-  if (dragIdx.value === null || dragIdx.value === targetIdx) return;
+  if (dragIdx.value === null || dragIdx.value === targetIdx) {
+    onDragEnd();
+    return;
+  }
   const list = [...cards.value];
   const [moved] = list.splice(dragIdx.value, 1);
   list.splice(targetIdx, 0, moved);
   list.forEach((c, i) => { c.order = i + 1; });
   cards.value = list;
-  dragIdx.value = null;
+  onDragEnd();
   await reorderCards(cards.value.map((c, i) => ({ id: c.id, order: i + 1 })));
+}
+
+function onDragEnd() {
+  dragIdx.value = null;
+  onHandleRelease();
 }
 
 async function moveCard(idx, dir) {

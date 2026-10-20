@@ -204,7 +204,69 @@
 
       <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
       <section class="px-4 pt-8 pb-5 flex flex-col items-center">
-        <div class="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mb-5 select-none">
+        <!-- Search Engine Tabs -->
+        <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
+          <button
+            v-for="eng in searchEngines"
+            :key="eng.id || eng.name"
+            type="button"
+            class="px-3 py-1 rounded-full text-xs transition"
+            :class="selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name)
+              ? (theme === 'light' ? 'bg-indigo-600 text-white border border-indigo-600 font-semibold shadow-sm' : 'bg-indigo-500/25 text-indigo-400 border border-indigo-500/40 font-semibold')
+              : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 border border-transparent')"
+            @click="selectEngine(eng)"
+          >
+            {{ eng.label }}
+          </button>
+          <button
+            type="button"
+            class="px-2.5 py-1 rounded-full text-[11px] border border-dashed transition"
+            :class="theme === 'light'
+              ? 'text-slate-500 hover:text-indigo-600 border-slate-300 hover:border-indigo-400'
+              : 'text-slate-400 hover:text-indigo-400 border-slate-700 hover:border-indigo-500/50'"
+            title="自定义配置搜索引擎与地址"
+            @click="goAdmin('engine')"
+          >
+            ⚙ 自定义引擎
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="w-full max-w-2xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
+          <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+          </svg>
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="text"
+            :placeholder="selectedEngine ? selectedEngine.placeholder : '输入关键词搜索...'"
+            class="w-full bg-transparent border-none outline-none text-sm sm:text-base py-2 placeholder-slate-500"
+            @keyup.enter="handleSearch"
+          />
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-500/20 transition"
+            title="清空搜索"
+            @click="searchQuery = ''"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+          <kbd v-else class="hidden sm:inline-block px-2 py-0.5 text-xs font-mono rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/20 select-none" title="按 / 键快速聚焦搜索">/</kbd>
+          <button
+            type="button"
+            class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition shrink-0"
+            @click="handleSearch"
+          >
+            搜索
+          </button>
+        </div>
+
+
+        <div class="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 select-none">
           <div class="text-center sm:text-left">
             <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
             <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
@@ -281,68 +343,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Search Engine Tabs -->
-        <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
-          <button
-            v-for="eng in searchEngines"
-            :key="eng.id || eng.name"
-            type="button"
-            class="px-3 py-1 rounded-full text-xs transition"
-            :class="selectedEngine && (selectedEngine.id === eng.id || selectedEngine.name === eng.name)
-              ? (theme === 'light' ? 'bg-indigo-600 text-white border border-indigo-600 font-semibold shadow-sm' : 'bg-indigo-500/25 text-indigo-400 border border-indigo-500/40 font-semibold')
-              : (theme === 'light' ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-900/5 border border-transparent' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 border border-transparent')"
-            @click="selectEngine(eng)"
-          >
-            {{ eng.label }}
-          </button>
-          <button
-            type="button"
-            class="px-2.5 py-1 rounded-full text-[11px] border border-dashed transition"
-            :class="theme === 'light'
-              ? 'text-slate-500 hover:text-indigo-600 border-slate-300 hover:border-indigo-400'
-              : 'text-slate-400 hover:text-indigo-400 border-slate-700 hover:border-indigo-500/50'"
-            title="自定义配置搜索引擎与地址"
-            @click="goAdmin('engine')"
-          >
-            ⚙ 自定义引擎
-          </button>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="w-full max-w-2xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
-          <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-          </svg>
-          <input
-            ref="searchInputRef"
-            v-model="searchQuery"
-            type="text"
-            :placeholder="selectedEngine ? selectedEngine.placeholder : '输入关键词搜索...'"
-            class="w-full bg-transparent border-none outline-none text-sm sm:text-base py-2 placeholder-slate-500"
-            @keyup.enter="handleSearch"
-          />
-          <button
-            v-if="searchQuery"
-            type="button"
-            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-500/20 transition"
-            title="清空搜索"
-            @click="searchQuery = ''"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6L6 18M6 6l12 12"/>
-            </svg>
-          </button>
-          <kbd v-else class="hidden sm:inline-block px-2 py-0.5 text-xs font-mono rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/20 select-none" title="按 / 键快速聚焦搜索">/</kbd>
-          <button
-            type="button"
-            class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 transition shrink-0"
-            @click="handleSearch"
-          >
-            搜索
-          </button>
-        </div>
-
         <!-- Widgets Row: Hitokoto / Todo / Countdown -->
         <div class="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 select-none">
           <!-- Hitokoto Widget -->

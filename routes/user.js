@@ -62,7 +62,7 @@ router.put('/password', authMiddleware, (req, res) => {
     
     // 更新密码
     const newPasswordHash = bcrypt.hashSync(newPassword, 10);
-    db.run('UPDATE users SET password = ? WHERE id = ?', [newPasswordHash, req.user.id], (err) => {
+    db.run('UPDATE users SET password = ?, session_version = session_version + 1 WHERE id = ?', [newPasswordHash, req.user.id], (err) => {
       if (err) {
         return res.status(500).json({ message: '密码更新失败' });
       }

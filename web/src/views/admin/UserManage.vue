@@ -31,6 +31,8 @@
 import { ref } from 'vue';
 import { changePassword } from '../../api';
 
+const emit = defineEmits(['password-changed']);
+
 const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
@@ -57,6 +59,7 @@ async function handleChangePwd() {
     await changePassword(oldPassword.value, newPassword.value);
     isErr.value = false;
     msg.value = '密码修改成功';
+    emit('password-changed');
     oldPassword.value = '';
     newPassword.value = '';
     confirmPassword.value = '';

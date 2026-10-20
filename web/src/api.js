@@ -3,6 +3,18 @@ const BASE = '/api';
 
 export const login = (username, password) => axios.post(`${BASE}/login`, { username, password });
 
+// 登录态失效（token 过期、改密后会话版本变更等）时统一清理本地 token 并通知页面回登录页
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/login')) {
+      localStorage.removeItem('token');
+      window.dispatchEvent(new Event('auth-expired'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 function authHeaders() {
   const token = localStorage.getItem('token');
   return token ? { Authorization: `Bearer ${token}` } : {};

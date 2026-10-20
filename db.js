@@ -326,6 +326,7 @@ db.serialize(() => {
 
   db.run(`ALTER TABLE users ADD COLUMN last_login_time TEXT`, [], () => {});
   db.run(`ALTER TABLE users ADD COLUMN last_login_ip TEXT`, [], () => {});
+  db.run(`ALTER TABLE users ADD COLUMN session_version INTEGER DEFAULT 0`, [], () => {});
 });
 
 

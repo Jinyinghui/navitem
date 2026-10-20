@@ -23,6 +23,7 @@
             <input v-model="password" type="password" placeholder="请输入密码" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:border-indigo-500 outline-none" />
           </div>
           <p v-if="loginError" class="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 text-center">{{ loginError }}</p>
+          <p v-if="loginNotice" class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 text-center">{{ loginNotice }}</p>
           <div class="flex gap-3 pt-2">
             <button type="button" class="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition" @click="goHome">
               返回前台
@@ -145,7 +146,7 @@
           <CardManage v-if="page === 'card'" />
           <BackgroundManage v-if="page === 'background'" />
           <SearchEngineManage v-if="page === 'engine'" />
-          <UserManage v-if="page === 'user'" />
+          <UserManage v-if="page === 'user'" @password-changed="handlePasswordChanged" />
         </main>
       </div>
     </div>
@@ -155,7 +156,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { login, getMenus, getAllCards, getActiveBackground } from '../api';
+import { login, getMenus, getAllCards, getActiveBackground, getUserProfile } from '../api';
 import { themeMode, effectiveTheme, syncBodyThemeClass, cycleTheme } from '../defaultData';
 import MenuManage from './admin/MenuManage.vue';
 import CardManage from './admin/CardManage.vue';
@@ -181,6 +182,7 @@ const username = ref('');
 const password = ref('');
 const loading = ref(false);
 const loginError = ref('');
+const loginNotice = ref('');
 
 const stats = reactive({
   menuCount: 6,
@@ -210,11 +212,36 @@ const pageTitle = computed(() => {
   }
 });
 
+function isTokenExpired(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return !payload.exp || payload.exp * 1000 <= Date.now();
+  } catch {
+    return true;
+  }
+}
+
+function handleAuthExpired() {
+  isLoggedIn.value = false;
+}
+
+function handlePasswordChanged() {
+  logout();
+  loginNotice.value = '密码已修改，请使用新密码重新登录';
+}
+
 onMounted(() => {
   syncBodyThemeClass();
-  // Always require re-login every time entering Admin Management
-  isLoggedIn.value = false;
-  localStorage.removeItem('token');
+  window.addEventListener('auth-expired', handleAuthExpired);
+  // 登录状态保存在本地浏览器：7 天内有未过期 token 则免登录（再向服务端校验一次会话有效性）
+  const token = localStorage.getItem('token');
+  if (token && !isTokenExpired(token)) {
+    isLoggedIn.value = true;
+    getUserProfile().catch(() => {});
+    fetchDashboardData();
+  } else {
+    localStorage.removeItem('token');
+  }
   const qTab = route.query.tab;
   if (qTab && ['welcome', 'menu', 'card', 'background', 'engine', 'search', 'user'].includes(String(qTab))) {
     page.value = qTab === 'search' ? 'engine' : String(qTab);
@@ -252,6 +279,7 @@ async function handleLogin() {
   }
   loading.value = true;
   loginError.value = '';
+  loginNotice.value = '';
   try {
     const response = await login(username.value, password.value);
     if (response.data?.token) {

@@ -46,6 +46,7 @@ export const addBackground = (data) => axios.post(`${BASE}/backgrounds`, data, {
 export const updateBackground = (id, data) => axios.put(`${BASE}/backgrounds/${id}`, data, { headers: authHeaders() });
 export const activateBackground = (id) => axios.put(`${BASE}/backgrounds/${id}/activate`, {}, { headers: authHeaders() });
 export const deleteBackground = (id) => axios.delete(`${BASE}/backgrounds/${id}`, { headers: authHeaders() });
+export const reorderBackgrounds = (items) => axios.put(`${BASE}/backgrounds/reorder`, { items }, { headers: authHeaders() });
 
 // 用户API
 export const getUserProfile = () => axios.get(`${BASE}/users/profile`, { headers: authHeaders() });

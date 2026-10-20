@@ -86,6 +86,20 @@ router.delete('/:id', auth, (req, res) => {
   });
 });
 
+// 设置默认搜索引擎
+router.put('/:id/default', auth, (req, res) => {
+  const { id } = req.params;
+  
+  db.serialize(() => {
+    db.run('UPDATE search_engines SET is_default = 0');
+    db.run('UPDATE search_engines SET is_default = 1 WHERE id = ?', [id], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: '搜索引擎不存在' });
+      res.json({ message: '默认搜索引擎设置成功' });
+    });
+  });
+});
+
 // 批量更新排序
 router.put('/reorder', auth, (req, res) => {
   const { items } = req.body;

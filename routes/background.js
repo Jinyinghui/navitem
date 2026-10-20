@@ -88,6 +88,20 @@ router.delete('/:id', auth, (req, res) => {
   });
 });
 
+// 激活背景
+router.put('/:id/activate', auth, (req, res) => {
+  const { id } = req.params;
+  
+  db.serialize(() => {
+    db.run('UPDATE backgrounds SET is_active = 0');
+    db.run('UPDATE backgrounds SET is_active = 1 WHERE id = ?', [id], function(err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: '背景不存在' });
+      res.json({ message: '背景激活成功' });
+    });
+  });
+});
+
 // 批量更新排序
 router.put('/reorder', auth, (req, res) => {
   const { items } = req.body;

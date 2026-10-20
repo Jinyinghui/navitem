@@ -75,6 +75,34 @@
       </div>
     </div>
 
+    <!-- Home Login Modal -->
+    <div v-if="loginModal.visible" id="homeLoginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4" @click.self="loginModal.visible = false">
+      <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-slate-100 space-y-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold">登录后使用编辑模式</h3>
+            <p class="text-xs text-slate-400 mt-1">使用管理后台账号登录，成功后直接在本页进入编辑模式。</p>
+          </div>
+          <button type="button" class="text-slate-500 hover:text-slate-200 text-lg leading-none" @click="loginModal.visible = false">✕</button>
+        </div>
+        <form class="space-y-3.5" @submit.prevent="submitHomeLogin">
+          <div>
+            <label class="text-xs font-medium text-slate-400">用户名</label>
+            <input v-model="loginModal.username" type="text" required autocomplete="username" class="mt-1 w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 outline-none focus:border-indigo-500" placeholder="请输入用户名" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-400">密码</label>
+            <input v-model="loginModal.password" type="password" required autocomplete="current-password" class="mt-1 w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-100 outline-none focus:border-indigo-500" placeholder="请输入密码" />
+          </div>
+          <p v-if="loginModal.error" class="text-xs text-rose-400">{{ loginModal.error }}</p>
+          <div class="flex gap-2 pt-1">
+            <button type="button" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition" @click="loginModal.visible = false">取消</button>
+            <button type="submit" :disabled="loginModal.loading" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-xs font-semibold transition">{{ loginModal.loading ? '登录中…' : '登录并进入编辑' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Quick Rename Menu Modal -->
     <div v-if="quickMenuModal.visible" id="quickRenameMenuModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4" @click.self="quickMenuModal.visible = false">
       <div class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-sm w-full p-6 shadow-2xl text-slate-100 space-y-4">
@@ -628,7 +656,8 @@ import {
   uploadLogo,
   getActiveBackground,
   getSearchEngines,
-  getCurrentUser
+  getCurrentUser,
+  login
 } from '../api';
 import {
   DEFAULT_BACKGROUNDS,
@@ -885,6 +914,11 @@ function hasValidLocalToken() {
   }
 }
 
+function enterEditMode() {
+  isEditMode.value = true;
+  showToast('已进入快捷编辑模式：可拖拽排序、右键快捷操作，点卡片右上角红叉 ✕ 删除');
+}
+
 async function toggleEditMode() {
   if (isEditMode.value) {
     isEditMode.value = false;
@@ -892,20 +926,40 @@ async function toggleEditMode() {
     return;
   }
   if (!hasValidLocalToken()) {
-    showToast('请先登录后再使用编辑模式');
-    router.push('/admin');
+    openLoginModal();
     return;
   }
   try {
     await getCurrentUser();
   } catch (e) {
     localStorage.removeItem('token');
-    showToast('登录已过期，请重新登录');
-    router.push('/admin');
+    openLoginModal('登录已过期，请重新登录');
     return;
   }
-  isEditMode.value = true;
-  showToast('已进入快捷编辑模式：可拖拽排序、右键快捷操作，点卡片右上角红叉 ✕ 删除');
+  enterEditMode();
+}
+
+// ===== 首页内登录弹窗（登录后原地激活编辑模式，不跳后台）=====
+const loginModal = ref({ visible: false, username: '', password: '', error: '', loading: false });
+
+function openLoginModal(error = '') {
+  loginModal.value = { visible: true, username: '', password: '', error, loading: false };
+}
+
+async function submitHomeLogin() {
+  if (loginModal.value.loading) return;
+  loginModal.value.loading = true;
+  loginModal.value.error = '';
+  try {
+    const res = await login(loginModal.value.username.trim(), loginModal.value.password);
+    localStorage.setItem('token', res.data.token);
+    loginModal.value.visible = false;
+    enterEditMode();
+  } catch (e) {
+    loginModal.value.error = e.response?.data?.error || '用户名或密码错误';
+  } finally {
+    loginModal.value.loading = false;
+  }
 }
 
 async function handleQuickDeleteMenu(menu) {

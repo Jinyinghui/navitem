@@ -260,13 +260,7 @@ async function handleLogin() {
     isLoggedIn.value = true;
     fetchDashboardData();
   } catch (error) {
-    // Allow fallback login with default credentials
-    if (username.value === 'admin' && password.value === '123456') {
-      isLoggedIn.value = true;
-      fetchDashboardData();
-    } else {
-      loginError.value = error.response?.data?.error || '登录失败，请检查用户名和密码';
-    }
+    loginError.value = error.response?.data?.error || '登录失败，请检查用户名和密码';
   } finally {
     loading.value = false;
   }

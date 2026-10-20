@@ -323,12 +323,22 @@
             :href="card.url"
             target="_blank"
             rel="noopener noreferrer"
+            draggable="true"
+            title="按住可拖拽调整卡片位置"
             :style="{ animationDelay: `${Math.min(idx * 0.02, 0.35)}s` }"
             :class="[
-              'relative glass-card card-anim rounded-2xl p-4 group',
+              'relative glass-card card-anim rounded-2xl p-4 group cursor-grab active:cursor-grabbing select-none',
               viewMode === 'compact' ? 'flex flex-col items-center justify-center text-center gap-2.5' : 'flex items-center gap-3.5',
-              isEditMode ? 'edit-mode-item' : ''
+              isEditMode ? 'edit-mode-item' : '',
+              draggedCardId === card.id ? 'is-dragging' : '',
+              dragOverCardId === card.id && draggedCardId !== card.id ? 'is-drag-over' : ''
             ]"
+            @click="onCardClick($event)"
+            @dragstart="onCardDragStart($event, card)"
+            @dragover.prevent="onCardDragOver($event, card)"
+            @dragleave="onCardDragLeave(card)"
+            @drop.prevent="onCardDrop($event, card)"
+            @dragend="onCardDragEnd"
           >
             <!-- Top-right Red Cross Delete Button in Edit Mode -->
             <button
@@ -386,6 +396,7 @@ import {
   deleteMenu,
   deleteSubMenu,
   deleteCard,
+  reorderCards,
   getActiveBackground,
   getSearchEngines
 } from '../api';
@@ -487,6 +498,72 @@ async function handleQuickDeleteCard(card) {
   } catch (e) {}
   allCards.value = allCards.value.filter(c => c.id !== card.id);
   showToast(`已删除「${card.title}」`);
+}
+
+// Homepage Card Drag-and-Drop Reordering
+const draggedCardId = ref(null);
+const dragOverCardId = ref(null);
+let justDraggedCard = false;
+
+function onCardClick(e) {
+  if (justDraggedCard) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
+function onCardDragStart(e, card) {
+  draggedCardId.value = card.id;
+  justDraggedCard = true;
+  e.dataTransfer.effectAllowed = 'move';
+  try {
+    e.dataTransfer.setData('text/plain', String(card.id));
+  } catch (err) {}
+}
+
+function onCardDragOver(e, card) {
+  if (draggedCardId.value === null) return;
+  dragOverCardId.value = card.id;
+}
+
+function onCardDragLeave(card) {
+  if (dragOverCardId.value === card.id) {
+    dragOverCardId.value = null;
+  }
+}
+
+async function onCardDrop(e, targetCard) {
+  if (draggedCardId.value === null || draggedCardId.value === targetCard.id) {
+    onCardDragEnd();
+    return;
+  }
+  const currentList = [...filteredCards.value];
+  const fromIdx = currentList.findIndex(c => c.id === draggedCardId.value);
+  const toIdx = currentList.findIndex(c => c.id === targetCard.id);
+  if (fromIdx !== -1 && toIdx !== -1) {
+    const [moved] = currentList.splice(fromIdx, 1);
+    currentList.splice(toIdx, 0, moved);
+    const reorderPayload = [];
+    currentList.forEach((item, index) => {
+      const target = allCards.value.find(c => c.id === item.id);
+      if (target) {
+        target.order = index + 1;
+        reorderPayload.push({ id: target.id, order: index + 1 });
+      }
+    });
+    allCards.value = [...allCards.value];
+    showToast('导航卡片排序已更新');
+    try {
+      await reorderCards(reorderPayload);
+    } catch (err) {}
+  }
+  onCardDragEnd();
+}
+
+function onCardDragEnd() {
+  draggedCardId.value = null;
+  dragOverCardId.value = null;
+  setTimeout(() => { justDraggedCard = false; }, 120);
 }
 
 // Weather state

@@ -147,7 +147,7 @@ async function handleBatchRefreshIcons() {
   try {
     const res = await refreshAllCardIcons();
     const r = res.data;
-    alert(`批量更新完成：共 ${r.total} 个网站，图标更新 ${r.updated} 个，无变化 ${r.unchanged} 个，失败 ${r.failed} 个（失败的已保留原图标）`);
+    alert(`批量更新完成：共 ${r.total} 个网站，图标更新 ${r.updated} 个，无变化 ${r.unchanged} 个，失败 ${r.failed} 个（失败的已保留原图标）${r.skipped ? `；跳过 ${r.skipped} 个手动上传图标的卡片` : ''}`);
     await loadCards();
   } catch (e) {
     alert(e.response?.data?.error || '批量更新失败，请稍后重试');

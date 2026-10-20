@@ -75,11 +75,16 @@ router.post('/fetch-icon', auth, async (req, res) => {
     res.status(422).json({ error: e.message });
   }
 });
-// 批量刷新全部卡片的站点图标（需认证）：重新抓取每个网址的图标，失败的保留原图标
+// 批量刷新全部卡片的站点图标（需认证）：重新抓取每个网址的图标，失败的保留原图标；
+// 用户自己上传的图片跳过不刷新（上传文件在 uploads/ 根目录：logo_url 为 /uploads/ 时间戳文件，或 custom_logo_path 不在 icons/ 抓取目录下）
 router.post('/refresh-icons', auth, async (req, res) => {
-  db.all('SELECT id, url, custom_logo_path FROM cards', [], async (err, rows) => {
+  db.all('SELECT id, url, logo_url, custom_logo_path FROM cards', [], async (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    const targets = rows.filter(r => r.url && /^https?:\/\//i.test(r.url));
+    const isUserUploaded = (r) =>
+      (r.logo_url && r.logo_url.startsWith('/uploads/')) ||
+      (r.custom_logo_path && !r.custom_logo_path.startsWith('icons/'));
+    const skipped = rows.filter(isUserUploaded).length;
+    const targets = rows.filter(r => r.url && /^https?:\/\//i.test(r.url) && !isUserUploaded(r));
     let updated = 0, unchanged = 0, failed = 0;
     const queue = [...targets];
     async function worker() {
@@ -100,7 +105,7 @@ router.post('/refresh-icons', auth, async (req, res) => {
     }
     const CONCURRENCY = 4;
     await Promise.all(Array.from({ length: Math.max(1, Math.min(CONCURRENCY, targets.length)) }, worker));
-    res.json({ total: targets.length, updated, unchanged, failed });
+    res.json({ total: targets.length, updated, unchanged, failed, skipped });
   });
 });
 

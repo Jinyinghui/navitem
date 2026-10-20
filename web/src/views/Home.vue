@@ -234,7 +234,7 @@
 </div>
 
 <!-- Search Bar -->
-<div class="w-full max-w-7xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
+<div class="w-full max-w-2xl glass-search rounded-2xl p-1.5 pl-4 flex items-center gap-2">
                 <svg class="text-slate-400 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
                 </svg>

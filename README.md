@@ -1,4 +1,4 @@
-# Nav-Item · 现代化个人导航工作台 v2.0
+# NavItem · 现代化个人导航工作台 v2.0
 
 一个轻量、纯净、高颜值且支持高度自定义的现代化个人导航站项目，基于 **Vue 3 + Vite + Tailwind CSS + Express + SQLite3** 构建，开箱即用，支持一键部署。
 

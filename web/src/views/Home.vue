@@ -112,7 +112,7 @@
               </svg>
             </div>
             <div>
-              <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 bg-clip-text text-transparent">Nav-Item</span>
+              <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-sky-400 bg-clip-text text-transparent">NavItem</span>
               <span class="hidden sm:inline-block ml-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/25">Modern v2.0</span>
             </div>
           </button>
@@ -603,7 +603,7 @@
 
       <!-- Clean Minimal Footer -->
       <footer class="py-5 px-4 text-center border-t border-slate-500/10 text-xs text-slate-500">
-        <p>Copyright © {{ new Date().getFullYear() }} Nav-Item · 现代化个人导航工作台</p>
+        <p>Copyright © {{ new Date().getFullYear() }} NavItem · 现代化个人导航工作台</p>
       </footer>
     </div>
   </div>

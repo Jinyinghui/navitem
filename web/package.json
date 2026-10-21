@@ -1,8 +1,8 @@
 {
-  "name": "nav-item-frontend",
+  "name": "navitem-frontend",
   "version": "1.0.0",
   "author": "eooce",
-  "description": "nav-item-frontend",
+  "description": "navitem-frontend",
   "repository": "https://github.com/eooce/nav-item",
   "license": "MIT",
   "scripts": {

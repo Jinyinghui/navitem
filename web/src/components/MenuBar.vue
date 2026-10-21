@@ -8,7 +8,7 @@
             <polygon points="3 11 22 2 13 21 11 13 3 11"/>
           </svg>
         </div>
-        <span class="brand-title">Nav-Item</span>
+        <span class="brand-title">NavItem</span>
       </div>
 
       <!-- 主导航菜单 -->

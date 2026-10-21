@@ -9,7 +9,7 @@
               <polygon points="3 11 22 2 13 21 11 13 3 11"/>
             </svg>
           </div>
-          <h2 class="text-xl font-bold">Nav-Item 后台控制台</h2>
+          <h2 class="text-xl font-bold">NavItem 后台控制台</h2>
           <p class="text-xs text-slate-400 mt-1">管理主菜单、二级分类、导航卡片、搜索引擎与个性化背景</p>
         </div>
 
@@ -46,7 +46,7 @@
               <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
               </div>
-              <span class="font-bold text-sm">Nav-Item 管理后台</span>
+              <span class="font-bold text-sm">NavItem 管理后台</span>
             </div>
             <button type="button" class="md:hidden text-xs text-indigo-400 font-semibold" @click="goHome">返回前台</button>
           </div>
@@ -107,7 +107,7 @@
           <div v-if="page === 'welcome'" class="space-y-6">
             <div class="rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white shadow-xl flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 class="text-lg font-bold">欢迎进入 Nav-Item 个人导航控制台</h2>
+                <h2 class="text-lg font-bold">欢迎进入 NavItem 个人导航控制台</h2>
                 <p class="text-xs text-indigo-100 mt-1">集中管理您的主菜单分类、二级子分类、常用网站卡片、搜索引擎与个性化主页背景。</p>
               </div>
               <div class="flex flex-wrap gap-2.5">

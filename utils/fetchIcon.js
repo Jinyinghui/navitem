@@ -70,6 +70,12 @@ function detectExt(contentType, buffer) {
   return null;
 }
 
+// favicon.im 的未知域名占位图特征：灰色圆 + 斜体单字母（<text font-style="italic">）
+function isFaviconImPlaceholder(buffer) {
+  const head = buffer.toString('utf8', 0, 512);
+  return head.includes('#808080') && head.includes('<text') && head.includes('italic');
+}
+
 // 抓取站点图标并存到 uploads/icons/，返回可入库的 custom_logo_path
 async function fetchAndStoreIcon(pageUrl) {
   let u;
@@ -86,7 +92,9 @@ async function fetchAndStoreIcon(pageUrl) {
     if (page.contentType.includes('html')) {
       candidates = iconCandidates(page.buffer.toString('utf8'), page.finalUrl);
     }
-  } catch { /* 页面本身抓不到时仍尝试 /favicon.ico 兜底 */ }
+  } catch { /* 页面本身抓不到时仍尝试 favicon.im 与 /favicon.ico 兜底 */ }
+  // 次选来源：聚合服务 favicon.im（常备有更清晰的矢量图标）；它对未知域名会返回灰圈字母占位图，验收时须剔除
+  candidates.push({ url: 'https://favicon.im/' + u.hostname, score: 0, viaIm: true });
   candidates.push({ url: u.origin + '/favicon.ico', score: 0 });
 
   const tried = [];
@@ -96,6 +104,7 @@ async function fetchAndStoreIcon(pageUrl) {
       const ext = detectExt(icon.contentType, icon.buffer);
       if (!ext) { tried.push(c.url + '（非图片）'); continue; }
       if (icon.buffer.length < MIN_ICON_BYTES) { tried.push(c.url + '（文件过小）'); continue; }
+      if (c.viaIm && ext === 'svg' && isFaviconImPlaceholder(icon.buffer)) { tried.push(c.url + '（占位图）'); continue; }
       fs.mkdirSync(ICON_DIR, { recursive: true });
       const name = crypto.createHash('sha1').update(c.url).digest('hex') + '.' + ext;
       fs.writeFileSync(path.join(ICON_DIR, name), icon.buffer);

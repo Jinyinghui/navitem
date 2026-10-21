@@ -54,7 +54,7 @@
           <div class="absolute inset-0 transition" :style="{ background: `rgba(11, 17, 32, ${(bg.overlay_opacity ?? 20) / 100})` }"></div>
           <span v-if="bg.is_active === 1" class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-indigo-600 text-white text-[11px] font-bold shadow">✓ 当前使用中</span>
           <span v-else class="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-900/80 text-slate-200 text-[11px] opacity-0 group-hover:opacity-100 transition">点击启用</span>
-          <span class="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/75 text-slate-300 text-[11px] backdrop-blur-sm">{{ bg.type === 'image' ? '图片壁纸' : '极光渐变' }}</span>
+          <span class="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-950/75 text-slate-300 text-[11px] backdrop-blur-sm">{{ bg.is_bing ? '🌄 每日壁纸' : (bg.type === 'image' ? '图片壁纸' : '极光渐变') }}</span>
         </div>
         <div class="p-3.5 flex items-center justify-between gap-2 bg-slate-900">
           <div class="min-w-0 flex-1">
@@ -63,7 +63,7 @@
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <button v-if="bg.is_active !== 1" type="button" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-400 hover:text-white text-xs font-semibold transition" @click="setActive(bg)">启用</button>
-            <button v-if="backgrounds.length > 1" type="button" class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white text-xs transition" @click="removeBg(bg.id)">删除</button>
+            <button v-if="backgrounds.length > 1 && !bg.is_bing" type="button" class="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-600 text-rose-400 hover:text-white text-xs transition" @click="removeBg(bg.id)">删除</button>
           </div>
         </div>
       </div>

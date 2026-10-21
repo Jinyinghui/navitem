@@ -103,7 +103,7 @@
     <div class="relative z-10 flex flex-col min-h-screen">
       <!-- Top Glass Navbar -->
       <header class="glass-nav sticky top-0 z-40 px-4 sm:px-6 py-3">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
           <!-- Brand -->
           <button type="button" class="flex items-center gap-2.5 text-left group focus:outline-none" @click="resetToHome">
             <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition">
@@ -206,9 +206,9 @@
       </header>
 
       <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
-      <section class="px-4 sm:px-6 pt-8 pb-5 flex flex-col items-center">
+      <section class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-5 flex flex-col items-center">
         <!-- Search Engine Tabs -->
-<div class="w-full max-w-7xl">
+<div class="w-full">
   <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
                 <button
                   v-for="eng in searchEngines"
@@ -270,14 +270,14 @@
                 </button>
               </div>
 
-<!-- Clock & Weather Row -->
-<div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-5 select-none">
-  <div class="glass-card rounded-2xl px-5 py-3 text-center sm:text-left">
+<!-- Info Rows：时钟/一言/天气 与 待办/汇率/倒计时 合并为同一网格，逐列等宽、两行等高 -->
+<div class="w-full grid grid-cols-1 sm:grid-cols-3 auto-rows-fr gap-3 lg:gap-4 mt-5 select-none">
+  <div class="glass-card rounded-2xl px-5 py-3 text-center sm:text-left flex flex-col justify-center">
       <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>
       <div class="mt-1.5 text-xs sm:text-sm text-slate-400 font-medium">{{ currentDate }} · {{ greetingText }}</div>
     </div>
   <!-- Hitokoto Widget (时钟与天气之间) -->
-  <div class="glass-card rounded-2xl px-4 py-3 min-w-0">
+  <div class="glass-card rounded-2xl px-4 py-3 min-w-0 flex flex-col justify-center">
       <div class="flex items-center gap-2">
         <span class="text-xs font-bold shrink-0">💬 一言</span>
         <span class="flex-1 text-[11px] text-slate-400 truncate text-right">—— {{ hitokoto.from }}</span>
@@ -357,9 +357,7 @@
                     </form>
                   </div>
                 </div>
-</div>
-        <!-- Widgets Row: Todo / Exchange Rate / Countdown -->
-        <div class="w-full max-w-7xl grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4 mt-4 select-none">
+
           <!-- Todo Widget -->
           <div class="glass-card rounded-2xl px-4 py-3 flex flex-col">
             <div class="flex items-center justify-between">

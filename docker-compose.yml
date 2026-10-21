@@ -1,6 +1,6 @@
 services:
   nav-item:
-    image: eooce/nav-item
+    image: ghcr.io/jinyinghui/navitem:latest
     container_name: nav-item
     ports:
       - "3000:3000"
@@ -12,4 +12,5 @@ services:
       - JWT_SECRET=${JWT_SECRET:-}
     volumes:
       - ./database:/app/database  # 持久化数据库文件
+      - ./uploads:/app/uploads    # 持久化上传文件（图标 icons/、每日壁纸 bing/、后台上传的背景图）
     restart: always

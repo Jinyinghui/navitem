@@ -4,6 +4,498 @@
 
 ---
 
+## 🎨 核心功能特性
+
+1. **现代化毛玻璃 UI 与浅色/深色/跟随系统三态主题**
+   - **三态主题前后台同步**：支持浅色（Light）、深色（Dark）与跟随系统（System）三态主题切换，且前后台与弹窗视觉保持无缝同步。
+   - **详情与紧凑双视图切换**：支持在**详情卡片视图**（展示图标、标题、简介/域名）与**紧凑网格视图**（高密度图标网格）之间一键切换。
+
+2. **首页三列双行效率小组件矩阵**
+   - **第一行小组件**：实时时钟问候、每日一言、智能天气提醒。
+   - **第二行小组件**：随手待办便签、实时汇率转换牌、重要日程倒计时。
+   - **等宽等高对齐**：全矩阵与下方卡片网格保持完全等宽等高精细对齐。
+
+3. **必应每日壁纸与自定义视觉精调**
+   - **必应每日壁纸**：系统内置每日壁纸行，每日零点自动拉取缓存与回退机制。
+   - **自定义壁纸精调**：支持自定义背景图片、高斯模糊度及遮罩透明度精调。
+
+4. **快捷编辑与全场景拖拽排序**
+   - **原地弹窗登录**：首页点击编辑按钮即可直接原地弹窗登录。
+   - **快捷修改与新增**：编辑模式下单击卡片直接弹窗修改、右上角红叉快速删除卡片、网格末尾加号快捷新增卡片。
+   - **全场景拖拽排序**：支持前后台全场景直接拖拽卡片与分类进行排序。
+
+5. **图标自动下载转存与强缓存优化**
+   - **网站图标自动下载转存本地**：自动抓取网站图标并转存至本地服务器。
+   - **后台真实图标预览与一键批量刷新**：后台支持真实图标预览与一键批量刷新图标功能，静态资源配置 30 天强缓存。
+
+6. **多搜索引擎切换与站内跨分类实时检索**
+   - **多搜索引擎切换**：内置百度、谷歌、必应等多种搜索引擎无缝切换。
+   - **站内跨分类实时检索**：支持站内跨分类卡片实时搜索过滤。
+   - **自定义搜索引擎配置**：支持自定义搜索引擎 URL 模板与快捷配置。
+
+7. **环境变量凭证隔离与安全防护**
+   - **环境变量凭证隔离**：敏感配置（管理员账号、密码、JWT 密钥等）完全通过环境变量隔离。
+   - **凭证自动失效**：修改密码后旧 JWT Token 凭证自动作废失效。
+
+---
+
+## 📁 完整项目目录结构
+
+```text
+navitem/
+├── .github/              # GitHub Actions 工作流配置
+│   └── workflows/
+├── assets/               # 项目静态资源文件
+├── routes/               # Express 后端 API 路由
+│   ├── auth.js           # 身份验证路由
+│   ├── background.js     # 背景/壁纸管理路由
+│   ├── cards.js          # 导航卡片管理路由
+│   ├── icon.js           # 图标获取与转存路由
+│   ├── menus.js          # 菜单分类管理路由
+│   ├── search.js        # 搜索引擎管理路由
+│   └── weather.js       # 天气与小组件 API 路由
+├── uploads/              # 上传及本地缓存目录 (图标/壁纸等)
+│   ├── bing/             # 必应每日壁纸缓存
+│   └── icons/            # 转存的本地网站图标
+├── utils/                # 工具函数模块
+│   └── db.js             # 数据库辅助工具
+├── web/                  # Vue 3 前端工程
+│   ├── src/              # 前端源代码 (组件、视图、Pinia 状态)
+│   ├── index.html        # 前端入口 HTML
+│   ├── package.json      # 前端依赖配置
+│   └── vite.config.js    # Vite 打包配置
+├── database/             # SQLite 数据库持久化目录
+│   └── nav.db            # SQLite 数据库文件
+├── .dockerignore         # Docker 构建忽略配置
+├── .env.example          # 环境变量配置示例文件
+├── .gitignore            # Git 忽略配置
+├── Dockerfile            # Docker 多阶段镜像构建文件
+├── LICENSE               # 开源协议文件
+├── README.md             # 项目说明文档
+├── app.js                # Express 后端应用主入口
+├── config.js             # 系统配置文件
+├── db.js                 # SQLite 数据库初始化与表结构定义
+├── docker-compose.yml    # Docker Compose 部署配置文件
+├── package.json          # 后端依赖配置文件
+└── schema.sql            # 数据库 Schema 参考文件
+```
+
+---
+
+## 🗄️ 6 张 SQLite 数据库表结构说明
+
+1. **`menus` (主菜单分类表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 分类名称
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+2. **`sub_menus` (二级子菜单分类表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `parent_id` (INTEGER, NOT NULL): 外键关联 menus(id) 级联删除
+   - `name` (TEXT, NOT NULL): 子分类名称
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+3. **`cards` (导航卡片/网址表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `menu_id` (INTEGER): 外键关联 menus(id) 级联删除
+   - `sub_menu_id` (INTEGER): 外键关联 sub_menus(id) 级联删除
+   - `title` (TEXT, NOT NULL): 网站标题
+   - `url` (TEXT, NOT NULL): 目标网址
+   - `logo_url` (TEXT): 远程图标 URL
+   - `custom_logo_path` (TEXT): 本地转存图标路径
+   - `desc` (TEXT): 网站描述/简介
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+4. **`users` (管理员用户表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `username` (TEXT, UNIQUE, NOT NULL): 管理员用户名
+   - `password` (TEXT, NOT NULL): 加密密码散列
+
+5. **`backgrounds` (壁纸与背景管理表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 背景名称
+   - `type` (TEXT, NOT NULL, DEFAULT 'gradient'): 类型 (`gradient`/`image`/`bing`)
+   - `value` (TEXT, NOT NULL): 背景值/图片路径/接口
+   - `blur` (INTEGER, DEFAULT 0): 高斯模糊度
+   - `overlay_opacity` (INTEGER, DEFAULT 30): 遮罩透明度
+   - `is_active` (INTEGER, DEFAULT 0): 是否激活 (1: 激活, 0: 未激活)
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+   - `created_at` (TEXT, DEFAULT datetime('now', 'localtime')): 创建时间
+
+6. **`search_engines` (搜索引擎配置表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 引擎标识
+   - `label` (TEXT, NOT NULL): 引擎显示名称
+   - `url_template` (TEXT, NOT NULL): 查询 URL 模板 (含 `{q}` 占位符)
+   - `placeholder` (TEXT, DEFAULT ''): 输入框提示占位符
+   - `is_default` (INTEGER, DEFAULT 0): 是否默认 (1: 默认, 0: 否)
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+   - `created_at` (TEXT, DEFAULT datetime('now', 'localtime')): 创建时间
+
+---
+
+## 🚀 部署指南
+
+### 1. 环境变量与数据持久化目录
+
+#### 环境变量说明 (`.env`)
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `PORT` | `3000` | 服务运行端口 |
+| `ADMIN_USERNAME` | `admin` | 初始化管理员用户名 |
+| `ADMIN_PASSWORD` | `123456` | 初始化管理员密码 |
+| `JWT_SECRET` | 随机字符串 | JWT 身份验证签名密钥 |
+
+#### 数据持久化目录说明
+
+- `database/`：挂载 SQLite 数据库文件（`nav.db`），保存菜单分类、导航卡片、系统设置等数据。
+- `uploads/`：挂载上传与本地缓存目录（包含转存图标 `icons/` 和必应每日壁纸缓存 `bing/`）。
+
+---
+
+### 2. 源代码本地部署步骤
+
+1. **克隆项目代码**
+   ```bash
+   git clone git@github.com:Jinyinghui/navitem.git
+   cd navitem
+   ```
+
+2. **配置环境变量**
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **构建前端代码**
+   ```bash
+   cd web
+   npm install
+   npm run build
+   cd ..
+   ```
+
+4. **安装后端依赖并启动服务**
+   ```bash
+   npm install
+   npm start
+   ```
+
+5. **访问应用**
+   在浏览器中打开 `localhost:3000` 即可使用。
+
+---
+
+### 3. Docker 环境部署指南
+
+#### A. `docker run` 快速部署命令
+
+```bash
+docker run -d \
+  --name nav-item \
+  -p 3000:3000 \
+  -e PORT=3000 \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=123456 \
+  -e JWT_SECRET=your_jwt_secret \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/uploads:/app/uploads \
+  --restart always \
+  ghcr.io/jinyinghui/navitem:latest
+```
+
+#### B. `docker-compose` 部署配置示例
+
+创建 `docker-compose.yml` 文件：
+
+```yaml
+services:
+  nav-item:
+    image: ghcr.io/jinyinghui/navitem:latest
+    container_name: nav-item
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-123456}
+      - JWT_SECRET=${JWT_SECRET:-}
+    volumes:
+      - ./database:/app/database  # 持久化数据库文件
+      - ./uploads:/app/uploads    # 持久化上传文件（图标 icons/、每日壁纸 bing/、后台上传的背景图）
+    restart: always
+```
+
+启动命令：
+
+```bash
+docker-compose up -d
+```
+
+#### C. Docker 镜像构建说明
+
+基于本地源码构建镜像：
+
+```bash
+# 构建镜像
+docker build -t navitem:latest .
+
+# 运行镜像
+docker run -d \
+  --name nav-item \
+  -p 3000:3000 \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/uploads:/app/uploads \
+  navitem:latest
+```
+
+1. **现代化毛玻璃 UI 与浅色/深色/跟随系统三态主题**
+   - **三态主题前后台同步**：支持浅色（Light）、深色（Dark）与跟随系统（System）三态主题切换，且前后台与弹窗视觉保持无缝同步。
+   - **详情与紧凑双视图切换**：支持在**详情卡片视图**（展示图标、标题、简介/域名）与**紧凑网格视图**（高密度图标网格）之间一键切换。
+
+2. **首页三列双行效率小组件矩阵**
+   - **第一行小组件**：实时时钟问候、每日一言、智能天气提醒。
+   - **第二行小组件**：随手待办便签、实时汇率转换牌、重要日程倒计时。
+   - **等宽等高对齐**：全矩阵与下方卡片网格保持完全等宽等高精细对齐。
+
+3. **必应每日壁纸与自定义视觉精调**
+   - **必应每日壁纸**：系统内置每日壁纸行，每日零点自动拉取缓存与回退机制。
+   - **自定义壁纸精调**：支持自定义背景图片、高斯模糊度及遮罩透明度精调。
+
+4. **快捷编辑与全场景拖拽排序**
+   - **原地弹窗登录**：首页点击编辑按钮即可直接原地弹窗登录。
+   - **快捷修改与新增**：编辑模式下单击卡片直接弹窗修改、右上角红叉快速删除卡片、网格末尾加号快捷新增卡片。
+   - **全场景拖拽排序**：支持前后台全场景直接拖拽卡片与分类进行排序。
+
+5. **图标自动下载转存与强缓存优化**
+   - **网站图标自动下载转存本地**：自动抓取网站图标并转存至本地服务器。
+   - **后台真实图标预览与一键批量刷新**：后台支持真实图标预览与一键批量刷新图标功能，静态资源配置 30 天强缓存。
+
+6. **多搜索引擎切换与站内跨分类实时检索**
+   - **多搜索引擎切换**：内置百度、谷歌、必应等多种搜索引擎无缝切换。
+   - **站内跨分类实时检索**：支持站内跨分类卡片实时搜索过滤。
+   - **自定义搜索引擎配置**：支持自定义搜索引擎 URL 模板与快捷配置。
+
+7. **环境变量凭证隔离与安全防护**
+   - **环境变量凭证隔离**：敏感配置（管理员账号、密码、JWT 密钥等）完全通过环境变量隔离。
+   - **凭证自动失效**：修改密码后旧 JWT Token 凭证自动作废失效。
+
+---
+
+## 📁 完整项目目录结构
+
+```text
+navitem/
+├── .github/              # GitHub Actions 工作流配置
+│   └── workflows/
+├── assets/               # 项目静态资源文件
+├── routes/               # Express 后端 API 路由
+│   ├── auth.js           # 身份验证路由
+│   ├── background.js     # 背景/壁纸管理路由
+│   ├── cards.js          # 导航卡片管理路由
+│   ├── icon.js           # 图标获取与转存路由
+│   ├── menus.js          # 菜单分类管理路由
+│   ├── search.js        # 搜索引擎管理路由
+│   └── weather.js       # 天气与小组件 API 路由
+├── uploads/              # 上传及本地缓存目录 (图标/壁纸等)
+│   ├── bing/             # 必应每日壁纸缓存
+│   └── icons/            # 转存的本地网站图标
+├── utils/                # 工具函数模块
+│   └── db.js             # 数据库辅助工具
+├── web/                  # Vue 3 前端工程
+│   ├── src/              # 前端源代码 (组件、视图、Pinia 状态)
+│   ├── index.html        # 前端入口 HTML
+│   ├── package.json      # 前端依赖配置
+│   └── vite.config.js    # Vite 打包配置
+├── database/             # SQLite 数据库持久化目录
+│   └── nav.db            # SQLite 数据库文件
+├── .dockerignore         # Docker 构建忽略配置
+├── .env.example          # 环境变量配置示例文件
+├── .gitignore            # Git 忽略配置
+├── Dockerfile            # Docker 多阶段镜像构建文件
+├── LICENSE               # 开源协议文件
+├── README.md             # 项目说明文档
+├── app.js                # Express 后端应用主入口
+├── config.js             # 系统配置文件
+├── db.js                 # SQLite 数据库初始化与表结构定义
+├── docker-compose.yml    # Docker Compose 部署配置文件
+├── package.json          # 后端依赖配置文件
+└── schema.sql            # 数据库 Schema 参考文件
+```
+
+---
+
+## 🗄️ 6 张 SQLite 数据库表结构说明
+
+1. **`menus` (主菜单分类表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 分类名称
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+2. **`sub_menus` (二级子菜单分类表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `parent_id` (INTEGER, NOT NULL): 外键关联 menus(id) 级联删除
+   - `name` (TEXT, NOT NULL): 子分类名称
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+3. **`cards` (导航卡片/网址表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `menu_id` (INTEGER): 外键关联 menus(id) 级联删除
+   - `sub_menu_id` (INTEGER): 外键关联 sub_menus(id) 级联删除
+   - `title` (TEXT, NOT NULL): 网站标题
+   - `url` (TEXT, NOT NULL): 目标网址
+   - `logo_url` (TEXT): 远程图标 URL
+   - `custom_logo_path` (TEXT): 本地转存图标路径
+   - `desc` (TEXT): 网站描述/简介
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+
+4. **`users` (管理员用户表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `username` (TEXT, UNIQUE, NOT NULL): 管理员用户名
+   - `password` (TEXT, NOT NULL): 加密密码散列
+
+5. **`backgrounds` (壁纸与背景管理表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 背景名称
+   - `type` (TEXT, NOT NULL, DEFAULT 'gradient'): 类型 (`gradient`/`image`/`bing`)
+   - `value` (TEXT, NOT NULL): 背景值/图片路径/接口
+   - `blur` (INTEGER, DEFAULT 0): 高斯模糊度
+   - `overlay_opacity` (INTEGER, DEFAULT 30): 遮罩透明度
+   - `is_active` (INTEGER, DEFAULT 0): 是否激活 (1: 激活, 0: 未激活)
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+   - `created_at` (TEXT, DEFAULT datetime('now', 'localtime')): 创建时间
+
+6. **`search_engines` (搜索引擎配置表)**
+   - `id` (INTEGER, PRIMARY KEY, AUTOINCREMENT): 主键 ID
+   - `name` (TEXT, NOT NULL): 引擎标识
+   - `label` (TEXT, NOT NULL): 引擎显示名称
+   - `url_template` (TEXT, NOT NULL): 查询 URL 模板 (含 `{q}` 占位符)
+   - `placeholder` (TEXT, DEFAULT ''): 输入框提示占位符
+   - `is_default` (INTEGER, DEFAULT 0): 是否默认 (1: 默认, 0: 否)
+   - `order` (INTEGER, DEFAULT 0): 排序权重
+   - `created_at` (TEXT, DEFAULT datetime('now', 'localtime')): 创建时间
+
+---
+
+## 🚀 部署指南
+
+### 1. 环境变量与数据持久化目录
+
+#### 环境变量说明 (`.env`)
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `PORT` | `3000` | 服务运行端口 |
+| `ADMIN_USERNAME` | `admin` | 初始化管理员用户名 |
+| `ADMIN_PASSWORD` | `123456` | 初始化管理员密码 |
+| `JWT_SECRET` | 随机字符串 | JWT 身份验证签名密钥 |
+
+#### 数据持久化目录说明
+
+- `database/`：挂载 SQLite 数据库文件（`nav.db`），保存菜单分类、导航卡片、系统设置等数据。
+- `uploads/`：挂载上传与本地缓存目录（包含转存图标 `icons/` 和必应每日壁纸缓存 `bing/`）。
+
+---
+
+### 2. 源代码本地部署步骤
+
+1. **克隆项目代码**
+   ```bash
+   git clone git@github.com:Jinyinghui/navitem.git
+   cd navitem
+   ```
+
+2. **配置环境变量**
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **构建前端代码**
+   ```bash
+   cd web
+   npm install
+   npm run build
+   cd ..
+   ```
+
+4. **安装后端依赖并启动服务**
+   ```bash
+   npm install
+   npm start
+   ```
+
+5. **访问应用**
+   在浏览器中打开 `localhost:3000` 即可使用。
+
+---
+
+### 3. Docker 环境部署指南
+
+#### A. `docker run` 快速部署命令
+
+```bash
+docker run -d \
+  --name nav-item \
+  -p 3000:3000 \
+  -e PORT=3000 \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD=123456 \
+  -e JWT_SECRET=your_jwt_secret \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/uploads:/app/uploads \
+  --restart always \
+  ghcr.io/jinyinghui/navitem:latest
+```
+
+#### B. `docker-compose` 部署配置示例
+
+创建 `docker-compose.yml` 文件：
+
+```yaml
+services:
+  nav-item:
+    image: ghcr.io/jinyinghui/navitem:latest
+    container_name: nav-item
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-123456}
+      - JWT_SECRET=${JWT_SECRET:-}
+    volumes:
+      - ./database:/app/database  # 持久化数据库文件
+      - ./uploads:/app/uploads    # 持久化上传文件（图标 icons/、每日壁纸 bing/、后台上传的背景图）
+    restart: always
+```
+
+启动命令：
+
+```bash
+docker-compose up -d
+```
+
+#### C. Docker 镜像构建说明
+
+基于本地源码构建镜像：
+
+```bash
+# 构建镜像
+docker build -t navitem:latest .
+
+# 运行镜像
+docker run -d \
+  --name nav-item \
+  -p 3000:3000 \
+  -v $(pwd)/database:/app/database \
+  -v $(pwd)/uploads:/app/uploads \
+  navitem:latest
+```代化个人导航工作台 v2.0
+
+一个轻量、纯净、高颜值且支持高度自定义的现代化个人导航站项目，基于 **Vue 3 + Vite + Tailwind CSS + Express + SQLite3** 构建，开箱即用，支持一键部署。
+
+---
+
 ## ✨ 核心功能特性
 
 ### 1. 🎨 现代化毛玻璃 UI 与三态主题联动

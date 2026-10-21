@@ -38,6 +38,7 @@
           <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 bg-slate-900/60">
             <th class="py-3 px-4 w-20">拖拽</th>
             <th class="py-3 px-3 w-14">图标</th>
+            <th class="py-3 px-3 w-64">Logo 地址</th>
             <th class="py-3 px-3">标题</th>
             <th class="py-3 px-3">目标网址</th>
             <th class="py-3 px-3">描述说明</th>
@@ -47,7 +48,7 @@
         </thead>
         <tbody class="divide-y divide-slate-800/70 text-xs">
           <tr v-if="displayedCards.length === 0">
-            <td colspan="7" class="py-8 text-center text-slate-500">当前分类下暂无卡片，可在上方表单中添加</td>
+            <td colspan="8" class="py-8 text-center text-slate-500">当前分类下暂无卡片，可在上方表单中添加</td>
           </tr>
           <tr
             v-for="(card, cIdx) in displayedCards"
@@ -83,6 +84,9 @@
                 <img v-if="card.display_logo && !iconErrors[card.id]" :src="card.display_logo" alt="" class="w-5 h-5 object-contain" loading="lazy" @error="iconErrors[card.id] = true" />
                 <span v-else>{{ (card.title || 'N').charAt(0).toUpperCase() }}</span>
               </div>
+            </td>
+            <td class="py-2.5 px-3">
+              <input v-model="card.logo_edit" type="text" placeholder="留空自动抓取" title="填图片链接保存后会自动转存到本地；填 /uploads/... 本地路径直接使用；清空保存则按站点地址重新自动抓取" class="w-full px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300" @change="saveLogoAddress(card)" />
             </td>
             <td class="py-2.5 px-3">
               <input v-model="card.title" type="text" class="w-full px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-100" @change="saveCard(card)" />
@@ -196,11 +200,35 @@ async function onMenuChange() {
 
 const iconErrors = ref({});
 
+function logoDisplayValue(card) {
+  if (card.custom_logo_path) return '/uploads/' + card.custom_logo_path;
+  return card.logo_url || '';
+}
+
 async function loadCards() {
   if (!selectedMenuId.value) return;
   iconErrors.value = {};
   const res = await getCards(selectedMenuId.value, selectedSubMenuId.value || null);
-  cards.value = res.data || [];
+  cards.value = (res.data || []).map(c => ({ ...c, logo_edit: logoDisplayValue(c) }));
+}
+
+// Logo 地址列保存：链接→后端自动转存本地；/uploads/icons 路径→本地图标；清空→按站点地址重新自动抓取
+async function saveLogoAddress(card) {
+  const v = (card.logo_edit || '').trim();
+  if (v === logoDisplayValue(card)) return;
+  let logo_url = '';
+  let custom_logo_path = '';
+  if (/^https?:\/\//i.test(v)) {
+    logo_url = v;
+  } else if (v.startsWith('/uploads/icons/')) {
+    custom_logo_path = v.slice('/uploads/'.length);
+  } else if (v.startsWith('icons/')) {
+    custom_logo_path = v;
+  } else if (v) {
+    logo_url = v;
+  }
+  await updateCard(card.id, { ...card, logo_url, custom_logo_path });
+  await loadCards();
 }
 
 async function handleAddCard() {

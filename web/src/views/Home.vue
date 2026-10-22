@@ -157,7 +157,7 @@
                   @mouseenter="cancelSubDropClose"
                   @mouseleave="scheduleSubDropClose"
                 >
-                  <div class="nav-sub-panel -translate-x-1/2 min-w-40 rounded-2xl border p-1.5 shadow-2xl backdrop-blur-xl">
+                  <div class="nav-sub-panel min-w-40 rounded-2xl border p-1.5 shadow-2xl backdrop-blur-xl">
                     <div v-for="sub in menu.subMenus" :key="sub.id" class="relative">
                       <button
                         type="button"
@@ -1601,9 +1601,9 @@ function openSubDrop(menu, event) {
   const el = event && event.currentTarget;
   if (el && typeof el.getBoundingClientRect === 'function') {
     const rect = el.getBoundingClientRect();
-    // 面板以标签为中心展开，x 做边缘钳制避免贴边溢出
-    const cx = Math.min(Math.max(rect.left + rect.width / 2, 100), window.innerWidth - 100);
-    subDropPos.value = { x: cx, y: rect.bottom + 6 };
+    // 面板左边缘与主分类标签左边缘对齐；靠近视口右缘时才左移防溢出（面板最小宽 160px）
+    const x = Math.min(Math.max(rect.left, 8), Math.max(8, window.innerWidth - 188));
+    subDropPos.value = { x, y: rect.bottom + 6 };
   }
   cancelSubDropClose();
   openSubMenuId.value = menu.id;

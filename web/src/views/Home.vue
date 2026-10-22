@@ -441,16 +441,16 @@
             <div
               v-if="showCountdownPicker"
               id="countdownCalendarPopover"
-              class="absolute right-0 left-0 sm:left-auto mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+              class="absolute left-0 right-0 mt-2 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-3 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
               @click.stop
             >
-              <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
                 <span class="text-xs font-bold text-slate-200">⏳ 选择倒计时日期</span>
                 <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showCountdownPicker = false">✕</button>
               </div>
 
               <!-- Month Navigation -->
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between mb-1">
                 <button type="button" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-300 flex items-center justify-center transition" title="上个月" @click="shiftCalMonth(-1)">‹</button>
                 <div class="flex items-center gap-2">
                   <span class="text-sm font-bold">{{ calCursor.y }} 年 {{ calCursor.m }} 月</span>
@@ -471,7 +471,7 @@
                   <button
                     v-else
                     type="button"
-                    class="h-11 rounded-lg flex flex-col items-center justify-center gap-0 transition"
+                    class="h-9 rounded-lg flex flex-col items-center justify-center gap-0 transition"
                     :class="cell.isSelected
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                       : 'hover:bg-slate-800'"
@@ -491,14 +491,14 @@
               </div>
 
               <!-- Holidays of the Displayed Month -->
-              <div class="mt-3 pt-3 border-t border-slate-800">
+              <div class="mt-2 pt-2 border-t border-slate-800">
                 <div class="text-[11px] text-slate-400 mb-1.5">📅 {{ calCursor.y }} 年 {{ calCursor.m }} 月节假日</div>
                 <div v-if="calMonthHolidays.length" class="space-y-1">
                   <button
                     v-for="h in calMonthHolidays"
                     :key="h.name + h.start"
                     type="button"
-                    class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-xs transition"
+                    class="w-full flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-xs transition"
                     @click="pickCountdownDate(h.start)"
                   >
                     <span>🎉 {{ h.name }}</span>
@@ -506,7 +506,7 @@
                   </button>
                 </div>
                 <p v-else class="text-[11px] text-slate-500">本月无法定节假日安排</p>
-                <p class="mt-2 text-[10px] text-slate-500">点击日期即自动保存：节假日用节日名，其他日期用星期几。</p>
+                <p class="mt-1.5 text-[10px] text-slate-500">点击日期即自动保存：节假日用节日名，其他日期用星期几。</p>
               </div>
             </div>
           </div>

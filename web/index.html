@@ -20,6 +20,18 @@
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
       }
+      /* 不显示页面滚动条（滚动本身保留：滚轮/触控/键盘照常）。
+         否则搜索无结果时页面变矮、滚动条消失，可用宽度多出约 16px，
+         所有居中内容会整体右移约 8px，看起来像页面抖了一下。 */
+      html, body {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      html::-webkit-scrollbar, body::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
       body.theme-dark {
         background-color: #0b1120;
         color: #f8fafc;

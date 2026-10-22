@@ -458,10 +458,11 @@
                   ref="countdownDateRef"
                   v-model="countdownDraft.date"
                   type="date"
-                  readonly
                   title="点击打开日期选择器"
                   class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500 cursor-pointer"
                   @click="openCountdownDatePicker"
+                  @keydown="blockCountdownDateTyping"
+                  @paste.prevent
                 />
                 <button type="submit" class="w-full px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">保存</button>
               </form>
@@ -1227,6 +1228,7 @@ function toggleCountdownPicker() {
 }
 
 // 打开原生日期选择器（日历弹窗）；不支持 showPicker 的浏览器退回聚焦输入框
+// 注意：日期框不能设 readonly——只读输入在规范里属于不可变元素，showPicker 会直接抛错、选择器打不开
 function openCountdownDatePicker() {
   const el = countdownDateRef.value;
   if (!el) return;
@@ -1235,6 +1237,12 @@ function openCountdownDatePicker() {
   } else {
     el.focus();
   }
+}
+
+// 日期只能点选：拦截键盘输入（Tab/回车/Escape 放行，不挡导航与提交），粘贴由模板里的 @paste.prevent 拦
+function blockCountdownDateTyping(e) {
+  if (['Tab', 'Enter', 'Escape'].includes(e.key)) return;
+  e.preventDefault();
 }
 
 function saveCountdown() {

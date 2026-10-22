@@ -65,6 +65,10 @@ export const deleteBackground = (id) => axios.delete(`${BASE}/backgrounds/${id}`
 export const getUserProfile = () => axios.get(`${BASE}/users/profile`, { headers: authHeaders() });
 export const getCurrentUser = () => axios.get(`${BASE}/users/me`, { headers: authHeaders() });
 export const changePassword = (oldPassword, newPassword) => axios.put(`${BASE}/users/password`, { oldPassword, newPassword }, { headers: authHeaders() });
+
+// 系统更新（由 updater sidecar 执行：拉取新镜像 → 重建容器 → 健康检查，失败自动回滚）
+export const getSystemUpdateStatus = () => axios.get(`${BASE}/system/update-status`, { headers: authHeaders() });
+export const startSystemUpdate = () => axios.post(`${BASE}/system/update-start`, {}, { headers: authHeaders() });
 export const getUsers = () => axios.get(`${BASE}/users`, { headers: authHeaders() });
 
 // 搜索引擎配置相关API

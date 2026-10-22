@@ -11,6 +11,7 @@ on:
       - 'web/**'
       - 'routes/**'
       - 'utils/**'
+      - 'updater/**'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -61,4 +62,20 @@ jobs:
             org.opencontainers.image.description=navitem
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
-          cache-to: type=gha,mode=maxtype=gha,mode=max
+          cache-to: type=gha,mode=max
+
+      # updater sidecar 镜像：后台「系统更新」按钮的执行手，独立小镜像、低频变化
+      - name: Build and push updater image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./updater
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ steps.vars.outputs.owner_lower }}/navitem-updater:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=navitem-updater
+            org.opencontainers.image.licenses=MIT
+          cache-from: type=gha,scope=updater
+          cache-to: type=gha,mode=max,scope=updater

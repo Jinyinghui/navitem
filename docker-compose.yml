@@ -10,7 +10,27 @@ services:
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-123456}
       - JWT_SECRET=${JWT_SECRET:-}
+      # 后台「系统更新」：转发给 updater sidecar 执行（密钥与 updater 共用同一个）
+      - UPDATER_URL=http://updater:4180
+      - UPDATER_TOKEN=${UPDATER_TOKEN:-}
     volumes:
-      - ./database:/app/database  # 持久化数据库文件
-      - ./uploads:/app/uploads    # 持久化上传文件（图标 icons/、每日壁纸 bing/、后台上传的背景图）
+      # HOST_DEPLOY_DIR 是部署目录在宿主机上的绝对路径（写在 .env 里）：
+      # 默认 "." 与旧行为完全一致；设置后绑定的就是绝对路径，
+      # 这样 updater 容器里跑 docker compose 重建时，数据卷指向不会错位
+      - ${HOST_DEPLOY_DIR:-.}/database:/app/database  # 持久化数据库文件
+      - ${HOST_DEPLOY_DIR:-.}/uploads:/app/uploads    # 持久化上传文件（图标 icons/、每日壁纸 bing/、后台上传的背景图）
     restart: always
+
+  # 后台「系统更新」的执行手：持有 docker.sock，按按钮指令拉新镜像、重建 nav-item、
+  # 健康检查，失败自动回滚。只在 compose 内部网络提供服务，不对外映射端口。
+  # 未在 .env 设置 UPDATER_TOKEN 时它拒绝执行任何更新，不影响站点本身运行。
+  updater:
+    image: ghcr.io/jinyinghui/navitem-updater:latest
+    container_name: navitem-updater
+    environment:
+      - UPDATER_TOKEN=${UPDATER_TOKEN:-}
+      - TARGET_CONTAINER=nav-item
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOST_DEPLOY_DIR:-.}:/host-deploy:ro  # 只读拿到 compose 文件，配合上面的绝对路径卷完成重建
+    restart: unless-stopped

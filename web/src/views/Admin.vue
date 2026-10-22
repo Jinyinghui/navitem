@@ -147,6 +147,7 @@
           <BackgroundManage v-if="page === 'background'" />
           <SearchEngineManage v-if="page === 'engine'" />
           <UserManage v-if="page === 'user'" @password-changed="handlePasswordChanged" />
+          <SystemUpdate v-if="page === 'system'" />
         </main>
       </div>
     </div>
@@ -163,6 +164,7 @@ import CardManage from './admin/CardManage.vue';
 import BackgroundManage from './admin/BackgroundManage.vue';
 import SearchEngineManage from './admin/SearchEngineManage.vue';
 import UserManage from './admin/UserManage.vue';
+import SystemUpdate from './admin/SystemUpdate.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -173,7 +175,8 @@ const navItems = [
   { key: 'card', label: '卡片管理', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>' },
   { key: 'background', label: '背景设置', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' },
   { key: 'engine', label: '搜索引擎', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>' },
-  { key: 'user', label: '账号安全', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+  { key: 'user', label: '账号安全', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { key: 'system', label: '系统更新', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>' }
 ];
 
 const page = ref('welcome');
@@ -208,6 +211,7 @@ const pageTitle = computed(() => {
     case 'background': return '背景主题与壁纸设置';
     case 'engine': return '首页搜索引擎与地址配置';
     case 'user': return '账号与密码安全';
+    case 'system': return '系统更新（镜像升级）';
     default: return '系统概览';
   }
 });
@@ -243,7 +247,7 @@ onMounted(() => {
     localStorage.removeItem('token');
   }
   const qTab = route.query.tab;
-  if (qTab && ['welcome', 'menu', 'card', 'background', 'engine', 'search', 'user'].includes(String(qTab))) {
+  if (qTab && ['welcome', 'menu', 'card', 'background', 'engine', 'search', 'user', 'system'].includes(String(qTab))) {
     page.value = qTab === 'search' ? 'engine' : String(qTab);
   }
 });

@@ -440,6 +440,7 @@
             <!-- Countdown Calendar Picker Popover -->
             <div
               v-if="showCountdownPicker"
+              id="countdownCalendarPopover"
               class="absolute right-0 left-0 sm:left-auto mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
               @click.stop
             >

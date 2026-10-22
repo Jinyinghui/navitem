@@ -219,6 +219,52 @@
         border-color: #cbd5e1 !important;
         color: #0f172a !important;
       }
+      /* 倒计时日历选择器：背景与文字跟随主页主题（浅色/自动浅色时切白底；
+         深色/自动深色时用模板自带的深色样式，与天气浮层同一套处理） */
+      body.theme-light #countdownCalendarPopover {
+        background-color: rgba(255, 255, 255, 0.98) !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15) !important;
+      }
+      body.theme-light #countdownCalendarPopover .border-slate-800 {
+        border-color: #e2e8f0 !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-slate-200 {
+        color: #0f172a !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-slate-300 {
+        color: #334155 !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-slate-400 {
+        color: #64748b !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-slate-500 {
+        color: #94a3b8 !important;
+      }
+      body.theme-light #countdownCalendarPopover .hover\:bg-slate-800:hover {
+        background-color: #f1f5f9 !important;
+      }
+      body.theme-light #countdownCalendarPopover .bg-slate-800 {
+        background-color: #f1f5f9 !important;
+        color: #334155 !important;
+      }
+      body.theme-light #countdownCalendarPopover .bg-slate-800\/60 {
+        background-color: #f1f5f9 !important;
+        color: #0f172a !important;
+      }
+      body.theme-light #countdownCalendarPopover .hover\:bg-slate-700:hover {
+        background-color: #e2e8f0 !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-rose-300 {
+        color: #e11d48 !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-rose-300\/80 {
+        color: rgba(225, 29, 72, 0.75) !important;
+      }
+      body.theme-light #countdownCalendarPopover .text-rose-400 {
+        color: #e11d48 !important;
+      }
     </style>
   </head>
   <body class="theme-light min-h-screen flex flex-col relative">

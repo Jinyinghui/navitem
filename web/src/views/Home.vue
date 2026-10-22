@@ -423,7 +423,7 @@
           <div class="relative">
             <div
               class="glass-card rounded-2xl px-4 py-3 h-full flex flex-col cursor-pointer"
-              title="点击打开日期选择器设置倒计时"
+              title="点击打开日历选择倒计时日期"
               @click.stop="toggleCountdownPicker"
             >
               <div class="flex items-center justify-between">
@@ -437,35 +437,76 @@
               <div class="mt-0.5 text-[11px] text-slate-400 truncate">{{ countdownStatusText }}</div>
             </div>
 
-            <!-- Countdown Settings Popover -->
+            <!-- Countdown Calendar Picker Popover -->
             <div
               v-if="showCountdownPicker"
-              class="absolute right-0 left-0 sm:left-auto mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
+              class="absolute right-0 left-0 sm:left-auto mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl bg-slate-900/95 border border-slate-700/80 p-4 shadow-2xl text-slate-100 z-50 backdrop-blur-xl"
               @click.stop
             >
               <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
-                <span class="text-xs font-bold text-slate-200">⏳ 倒计时设置</span>
+                <span class="text-xs font-bold text-slate-200">⏳ 选择倒计时日期</span>
                 <button type="button" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white text-xs flex items-center justify-center" @click="showCountdownPicker = false">✕</button>
               </div>
-              <form class="space-y-2" @submit.prevent="saveCountdown">
-                <input
-                  v-model="countdownDraft.name"
-                  type="text"
-                  placeholder="事件名称（如：春节、考试、旅行）"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
-                />
-                <input
-                  ref="countdownDateRef"
-                  v-model="countdownDraft.date"
-                  type="date"
-                  title="点击打开日期选择器"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500 cursor-pointer"
-                  @click="openCountdownDatePicker"
-                  @keydown="blockCountdownDateTyping"
-                  @paste.prevent
-                />
-                <button type="submit" class="w-full px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">保存</button>
-              </form>
+
+              <!-- Month Navigation -->
+              <div class="flex items-center justify-between mb-2">
+                <button type="button" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-300 flex items-center justify-center transition" title="上个月" @click="shiftCalMonth(-1)">‹</button>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold">{{ calCursor.y }} 年 {{ calCursor.m }} 月</span>
+                  <button type="button" class="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-[10px] text-slate-300 transition" @click="jumpCalToToday">今天</button>
+                </div>
+                <button type="button" class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-300 flex items-center justify-center transition" title="下个月" @click="shiftCalMonth(1)">›</button>
+              </div>
+
+              <!-- Weekday Header -->
+              <div class="grid grid-cols-7 text-center text-[10px] text-slate-500 mb-1">
+                <span v-for="w in ['一', '二', '三', '四', '五', '六', '日']" :key="w" class="py-1">{{ w }}</span>
+              </div>
+
+              <!-- Calendar Grid：点任意一天即自动存为倒计时 -->
+              <div class="grid grid-cols-7 gap-0.5">
+                <template v-for="(cell, ci) in calCells" :key="ci">
+                  <span v-if="!cell"></span>
+                  <button
+                    v-else
+                    type="button"
+                    class="h-11 rounded-lg flex flex-col items-center justify-center gap-0 transition"
+                    :class="cell.isSelected
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'hover:bg-slate-800'"
+                    :title="cell.dateStr"
+                    @click="pickCountdownDate(cell.dateStr)"
+                  >
+                    <span
+                      class="text-xs leading-none px-1 py-0.5"
+                      :class="[
+                        cell.isSelected ? 'font-bold' : (cell.offName ? 'text-rose-300 font-semibold' : (cell.isWeekend ? 'text-rose-300/80' : 'text-slate-200')),
+                        cell.isToday && !cell.isSelected ? 'ring-1 ring-indigo-400/80 rounded-full font-bold' : ''
+                      ]"
+                    >{{ cell.day }}</span>
+                    <span class="text-[9px] leading-none h-3 mt-0.5 truncate max-w-full px-0.5" :class="cell.isSelected ? 'text-indigo-200' : (cell.offName ? 'text-rose-400' : 'text-slate-500')">{{ cell.offName || (cell.isWork ? '班' : '') }}</span>
+                  </button>
+                </template>
+              </div>
+
+              <!-- Holidays of the Displayed Month -->
+              <div class="mt-3 pt-3 border-t border-slate-800">
+                <div class="text-[11px] text-slate-400 mb-1.5">📅 {{ calCursor.y }} 年 {{ calCursor.m }} 月节假日</div>
+                <div v-if="calMonthHolidays.length" class="space-y-1">
+                  <button
+                    v-for="h in calMonthHolidays"
+                    :key="h.name + h.start"
+                    type="button"
+                    class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-xs transition"
+                    @click="pickCountdownDate(h.start)"
+                  >
+                    <span>🎉 {{ h.name }}</span>
+                    <span class="text-slate-400">{{ h.label }}</span>
+                  </button>
+                </div>
+                <p v-else class="text-[11px] text-slate-500">本月无法定节假日安排</p>
+                <p class="mt-2 text-[10px] text-slate-500">点击日期即自动保存：节假日用节日名，其他日期用星期几。</p>
+              </div>
             </div>
           </div>
         </div>
@@ -615,7 +656,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   getMenus,
@@ -644,6 +685,7 @@ import {
   syncBodyThemeClass,
   cycleTheme
 } from '../defaultData';
+import { offDayName, workDayName } from '../holidays';
 
 const router = useRouter();
 
@@ -1194,10 +1236,15 @@ const pendingTodoCount = computed(() => todos.value.filter(t => !t.done).length)
 const visibleTodos = computed(() => [...todos.value].sort((a, b) => Number(a.done) - Number(b.done)).slice(0, 4));
 
 const countdown = ref({ name: '元旦', date: `${new Date().getFullYear() + 1}-01-01` });
-const countdownDraft = ref({ name: '', date: '' });
-const countdownDateRef = ref(null);
 const showCountdownPicker = ref(false);
 const countdownDays = ref(0);
+// 日历当前展示的年月（打开时定位到倒计时所在月）
+const calCursor = ref({ y: new Date().getFullYear(), m: new Date().getMonth() + 1 });
+const WEEKDAY_NAMES = ['日', '一', '二', '三', '四', '五', '六'];
+
+function fmtDateStr(y, m, d) {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
 
 function refreshCountdown() {
   const target = new Date(countdown.value.date + 'T00:00:00');
@@ -1219,40 +1266,89 @@ function loadCountdown() {
 }
 
 function toggleCountdownPicker() {
-  countdownDraft.value = { ...countdown.value };
+  if (!showCountdownPicker.value) {
+    // 打开时把日历定位到当前倒计时日期所在月
+    const parts = String(countdown.value.date || '').split('-').map(Number);
+    if (parts.length === 3 && parts[0] > 0 && parts[1] >= 1 && parts[1] <= 12) {
+      calCursor.value = { y: parts[0], m: parts[1] };
+    } else {
+      const now = new Date();
+      calCursor.value = { y: now.getFullYear(), m: now.getMonth() + 1 };
+    }
+  }
   showCountdownPicker.value = !showCountdownPicker.value;
-  // 打开设置即直接弹出系统日期选择器，日期只能点选、不用手填
-  if (showCountdownPicker.value) {
-    nextTick(() => openCountdownDatePicker());
+}
+
+function shiftCalMonth(delta) {
+  let { y, m } = calCursor.value;
+  m += delta;
+  if (m < 1) { m = 12; y -= 1; }
+  if (m > 12) { m = 1; y += 1; }
+  calCursor.value = { y, m };
+}
+
+function jumpCalToToday() {
+  const now = new Date();
+  calCursor.value = { y: now.getFullYear(), m: now.getMonth() + 1 };
+}
+
+// 日历单元格（周一起始）：节假日带节日名、调休上班日带「班」、已选/今天高亮
+const calCells = computed(() => {
+  const { y, m } = calCursor.value;
+  const leadBlanks = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const now = new Date();
+  const todayStr = fmtDateStr(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const cells = [];
+  for (let i = 0; i < leadBlanks; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = fmtDateStr(y, m, d);
+    const weekday = new Date(y, m - 1, d).getDay();
+    cells.push({
+      dateStr,
+      day: d,
+      isToday: dateStr === todayStr,
+      isSelected: dateStr === countdown.value.date,
+      isWeekend: weekday === 0 || weekday === 6,
+      offName: offDayName(dateStr),
+      isWork: !!workDayName(dateStr)
+    });
   }
-}
+  return cells;
+});
 
-// 打开原生日期选择器（日历弹窗）；不支持 showPicker 的浏览器退回聚焦输入框
-// 注意：日期框不能设 readonly——只读输入在规范里属于不可变元素，showPicker 会直接抛错、选择器打不开
-function openCountdownDatePicker() {
-  const el = countdownDateRef.value;
-  if (!el) return;
-  if (typeof el.showPicker === 'function') {
-    try { el.showPicker(); } catch (e) { el.focus(); }
-  } else {
-    el.focus();
+// 日历下方：当前展示月的节假日（同名连续放假合并成一条）
+const calMonthHolidays = computed(() => {
+  const { y, m } = calCursor.value;
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const groups = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = fmtDateStr(y, m, d);
+    const name = offDayName(dateStr);
+    if (!name) continue;
+    const last = groups[groups.length - 1];
+    if (last && last.name === name && last.endDay === d - 1) {
+      last.endDay = d;
+    } else {
+      groups.push({ name, start: dateStr, startDay: d, endDay: d });
+    }
   }
-}
+  return groups.map(g => ({
+    ...g,
+    label: g.startDay === g.endDay ? `${m}月${g.startDay}日` : `${m}月${g.startDay}日–${g.endDay}日`
+  }));
+});
 
-// 日期只能点选：拦截键盘输入（Tab/回车/Escape 放行，不挡导航与提交），粘贴由模板里的 @paste.prevent 拦
-function blockCountdownDateTyping(e) {
-  if (['Tab', 'Enter', 'Escape'].includes(e.key)) return;
-  e.preventDefault();
-}
-
-function saveCountdown() {
-  const name = countdownDraft.value.name.trim();
-  if (!name || !countdownDraft.value.date) return;
-  countdown.value = { name, date: countdownDraft.value.date };
+// 点任意一天直接存为倒计时：节假日用节日名，其他日期用「星期X」
+function pickCountdownDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const weekday = new Date(y, m - 1, d).getDay();
+  const name = offDayName(dateStr) || `星期${WEEKDAY_NAMES[weekday]}`;
+  countdown.value = { name, date: dateStr };
   localStorage.setItem('nav_countdown', JSON.stringify(countdown.value));
   refreshCountdown();
   showCountdownPicker.value = false;
-  showToast(`倒计时已设为「${name}」`);
+  showToast(`倒计时已设为「${name}」· ${dateStr}`);
 }
 
 // ===== 汇率牌（数据 open.er-api.com，本地缓存 6 小时，可输金额双向换算）=====

@@ -118,8 +118,14 @@
           </button>
 
           <!-- Main Category Navigation Bar (Supports Red Cross Delete in Edit Mode) -->
-          <nav class="order-3 lg:order-2 w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto py-2 px-2 rounded-2xl bg-slate-500/10 border border-slate-500/15" aria-label="主分类导航">
-            <div v-for="menu in menus" :key="menu.id" class="relative inline-flex shrink-0">
+          <nav data-main-nav class="order-3 lg:order-2 w-full lg:w-auto flex items-center gap-1.5 overflow-x-auto py-2 px-2 rounded-2xl bg-slate-500/10 border border-slate-500/15" aria-label="主分类导航">
+            <div
+              v-for="menu in menus"
+              :key="menu.id"
+              class="relative inline-flex shrink-0"
+              @mouseenter="openSubDrop(menu, $event)"
+              @mouseleave="scheduleSubDropClose"
+            >
               <button
                 type="button"
                 class="px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition whitespace-nowrap"
@@ -129,7 +135,7 @@
                     : 'hover:bg-slate-500/15 opacity-80 hover:opacity-100',
                   isEditMode ? 'edit-mode-item' : ''
                 ]"
-                @click="selectMenu(menu)"
+                @click="selectMenu(menu); openSubDrop(menu, $event)"
               >
                 {{ menu.name }}
                 <span v-if="menu.subMenus && menu.subMenus.length > 0" class="ml-1 text-[10px] opacity-75">▾</span>
@@ -140,6 +146,40 @@
                 :title="`删除菜单「${menu.name}」`"
                 @click.stop="handleQuickDeleteMenu(menu)"
               >✕</span>
+
+              <!-- 二级导航下拉：悬停主标签展开，点二级看其卡片、点主标签看主卡片。
+                   Teleport 到 body 并用 fixed 定位，避免被导航栏 overflow-x-auto 裁剪 -->
+              <Teleport to="body">
+                <div
+                  v-if="openSubMenuId === menu.id && menu.subMenus && menu.subMenus.length > 0"
+                  class="nav-sub-dropdown fixed z-50"
+                  :style="{ left: subDropPos.x + 'px', top: subDropPos.y + 'px' }"
+                  @mouseenter="cancelSubDropClose"
+                  @mouseleave="scheduleSubDropClose"
+                >
+                  <div class="nav-sub-panel -translate-x-1/2 min-w-40 rounded-2xl border p-1.5 shadow-2xl backdrop-blur-xl">
+                    <div v-for="sub in menu.subMenus" :key="sub.id" class="relative">
+                      <button
+                        type="button"
+                        class="nav-sub-item"
+                        :class="[
+                          activeMenu && activeMenu.id === menu.id && activeSubMenu && activeSubMenu.id === sub.id ? 'active' : '',
+                          isEditMode ? 'edit-mode-item' : ''
+                        ]"
+                        @click="onSubMenuNavClick(menu, sub)"
+                      >
+                        {{ sub.name }}
+                      </button>
+                      <span
+                        v-if="isEditMode"
+                        class="quick-del-badge"
+                        :title="`删除子菜单「${sub.name}」`"
+                        @click.stop="handleQuickDeleteSubMenu(sub)"
+                      >✕</span>
+                    </div>
+                  </div>
+                </div>
+              </Teleport>
             </div>
           </nav>
 
@@ -509,44 +549,6 @@
                 <p class="mt-1.5 text-[10px] text-slate-500">点击日期即自动保存：节假日用节日名，其他日期用星期几。</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Sub-menu Capsule Filter Bar (Supports Red Cross Delete in Edit Mode) -->
-        <div
-          v-if="activeMenu && activeMenu.subMenus && activeMenu.subMenus.length > 0 && !isGlobalFiltering"
-          class="mt-4 flex flex-wrap items-center justify-center gap-2"
-        >
-          <button
-            type="button"
-            class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition"
-            :class="activeSubMenu === null
-              ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-              : 'bg-slate-500/10 border-slate-500/20 text-slate-400 hover:border-indigo-500/40'"
-            @click="selectSubMenu(null)"
-          >
-            全部 {{ activeMenu.name }}
-          </button>
-          <div v-for="sub in activeMenu.subMenus" :key="sub.id" class="relative inline-flex">
-            <button
-              type="button"
-              class="px-3.5 py-1.5 rounded-full text-xs font-semibold border transition"
-              :class="[
-                activeSubMenu && activeSubMenu.id === sub.id
-                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                  : 'bg-slate-500/10 border-slate-500/20 text-slate-400 hover:border-indigo-500/40',
-                isEditMode ? 'edit-mode-item' : ''
-              ]"
-              @click="selectSubMenu(sub)"
-            >
-              {{ sub.name }}
-            </button>
-            <span
-              v-if="isEditMode"
-              class="quick-del-badge"
-              :title="`删除子菜单「${sub.name}」`"
-              @click.stop="handleQuickDeleteSubMenu(sub)"
-            >✕</span>
           </div>
         </div>
 
@@ -1470,6 +1472,7 @@ onMounted(async () => {
   updateClock();
   clockTimer = setInterval(updateClock, 15000);
   window.addEventListener('keydown', handleGlobalKeydown);
+  window.addEventListener('click', onDocClickSubDrop);
 
   // 首页小组件初始化：一言（先用缓存再拉新）、待办、倒计时
   try {
@@ -1519,6 +1522,8 @@ onMounted(async () => {
 onUnmounted(() => {
   if (clockTimer) clearInterval(clockTimer);
   window.removeEventListener('keydown', handleGlobalKeydown);
+  window.removeEventListener('click', onDocClickSubDrop);
+  cancelSubDropClose();
 });
 
 function handleGlobalKeydown(e) {
@@ -1567,18 +1572,13 @@ const filteredCards = computed(() => {
       (c.url && c.url.toLowerCase().includes(q))
     );
   }
+  // 只有站内搜索才按输入实时过滤下方卡片（上方分支已处理）；其他搜索引擎下输入框
+  // 只是给外部搜索用的，下方卡片保持当前分类列表、不受输入文字影响
   if (!activeMenu.value) return [];
-  let list = allCards.value.filter(c => {
+  const list = allCards.value.filter(c => {
     if (activeSubMenu.value) return c.sub_menu_id === activeSubMenu.value.id;
     return c.menu_id === activeMenu.value.id && !c.sub_menu_id;
   });
-  if (q) {
-    list = list.filter(c =>
-      (c.title && c.title.toLowerCase().includes(q)) ||
-      (c.desc && c.desc.toLowerCase().includes(q)) ||
-      (c.url && c.url.toLowerCase().includes(q))
-    );
-  }
   return list.sort((a, b) => (a.order || 0) - (b.order || 0));
 });
 
@@ -1589,6 +1589,51 @@ function selectMenu(menu) {
 
 function selectSubMenu(sub) {
   activeSubMenu.value = sub;
+}
+
+// ===== 顶部主导航的二级下拉（悬停展开；点二级看其卡片，点主标签看主卡片）=====
+const openSubMenuId = ref(null);
+const subDropPos = ref({ x: 0, y: 0 });
+let subDropCloseTimer = null;
+
+function openSubDrop(menu, event) {
+  if (!menu.subMenus || menu.subMenus.length === 0) return;
+  const el = event && event.currentTarget;
+  if (el && typeof el.getBoundingClientRect === 'function') {
+    const rect = el.getBoundingClientRect();
+    // 面板以标签为中心展开，x 做边缘钳制避免贴边溢出
+    const cx = Math.min(Math.max(rect.left + rect.width / 2, 100), window.innerWidth - 100);
+    subDropPos.value = { x: cx, y: rect.bottom + 6 };
+  }
+  cancelSubDropClose();
+  openSubMenuId.value = menu.id;
+}
+
+function scheduleSubDropClose() {
+  cancelSubDropClose();
+  subDropCloseTimer = setTimeout(() => { openSubMenuId.value = null; }, 180);
+}
+
+function cancelSubDropClose() {
+  if (subDropCloseTimer) {
+    clearTimeout(subDropCloseTimer);
+    subDropCloseTimer = null;
+  }
+}
+
+function onSubMenuNavClick(menu, sub) {
+  activeMenu.value = menu;
+  activeSubMenu.value = sub;
+  cancelSubDropClose();
+  openSubMenuId.value = null;
+}
+
+// 点击导航与下拉以外的地方时收起下拉（触屏没有 hover，靠这个关闭）
+function onDocClickSubDrop(e) {
+  if (openSubMenuId.value === null) return;
+  const t = e.target;
+  if (t && t.closest && (t.closest('[data-main-nav]') || t.closest('.nav-sub-dropdown'))) return;
+  openSubMenuId.value = null;
 }
 
 function resetToHome() {

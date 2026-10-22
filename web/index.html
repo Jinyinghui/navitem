@@ -265,6 +265,36 @@
       body.theme-light #countdownCalendarPopover .text-rose-400 {
         color: #e11d48 !important;
       }
+      /* 顶部主导航二级下拉（Teleport 到 body）：深色为默认，浅色跟随主页主题 */
+      .nav-sub-panel {
+        background: rgba(15, 23, 42, 0.95);
+        border-color: rgba(255, 255, 255, 0.1);
+        color: #f1f5f9;
+      }
+      body.theme-light .nav-sub-panel {
+        background: rgba(255, 255, 255, 0.98);
+        border-color: #cbd5e1;
+        color: #0f172a;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+      }
+      .nav-sub-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.45rem 0.75rem;
+        border-radius: 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: background-color 0.15s ease, color 0.15s ease;
+      }
+      .nav-sub-item:hover {
+        background: rgba(148, 163, 184, 0.18);
+      }
+      .nav-sub-item.active {
+        background: linear-gradient(to right, #6366f1, #9333ea);
+        color: #ffffff;
+      }
     </style>
   </head>
   <body class="theme-light min-h-screen flex flex-col relative">

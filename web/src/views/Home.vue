@@ -423,7 +423,7 @@
           <div class="relative">
             <div
               class="glass-card rounded-2xl px-4 py-3 h-full flex flex-col cursor-pointer"
-              title="点击设置倒计时"
+              title="点击打开日期选择器设置倒计时"
               @click.stop="toggleCountdownPicker"
             >
               <div class="flex items-center justify-between">
@@ -455,9 +455,13 @@
                   class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
                 />
                 <input
+                  ref="countdownDateRef"
                   v-model="countdownDraft.date"
                   type="date"
-                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500"
+                  readonly
+                  title="点击打开日期选择器"
+                  class="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 outline-none focus:border-indigo-500 cursor-pointer"
+                  @click="openCountdownDatePicker"
                 />
                 <button type="submit" class="w-full px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">保存</button>
               </form>
@@ -610,7 +614,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   getMenus,
@@ -1190,6 +1194,7 @@ const visibleTodos = computed(() => [...todos.value].sort((a, b) => Number(a.don
 
 const countdown = ref({ name: '元旦', date: `${new Date().getFullYear() + 1}-01-01` });
 const countdownDraft = ref({ name: '', date: '' });
+const countdownDateRef = ref(null);
 const showCountdownPicker = ref(false);
 const countdownDays = ref(0);
 
@@ -1215,6 +1220,21 @@ function loadCountdown() {
 function toggleCountdownPicker() {
   countdownDraft.value = { ...countdown.value };
   showCountdownPicker.value = !showCountdownPicker.value;
+  // 打开设置即直接弹出系统日期选择器，日期只能点选、不用手填
+  if (showCountdownPicker.value) {
+    nextTick(() => openCountdownDatePicker());
+  }
+}
+
+// 打开原生日期选择器（日历弹窗）；不支持 showPicker 的浏览器退回聚焦输入框
+function openCountdownDatePicker() {
+  const el = countdownDateRef.value;
+  if (!el) return;
+  if (typeof el.showPicker === 'function') {
+    try { el.showPicker(); } catch (e) { el.focus(); }
+  } else {
+    el.focus();
+  }
 }
 
 function saveCountdown() {

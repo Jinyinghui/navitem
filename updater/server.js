@@ -108,35 +108,43 @@ function digestForRepo(digests) {
 }
 
 // GHCR 匿名拉取令牌 → 查 latest 的清单摘要（Docker-Content-Digest）
+// 远程摘要缓存 60 秒：进页自动检查和更新轮询（2 秒一次）走缓存，避免频繁打 GHCR；
+// 点「检查更新」时带 force=1 绕过缓存现查，否则 60 秒内连点都返回旧摘要、看起来像按钮没反应。
 let remoteCache = { digest: '', at: 0 };
-async function remoteDigest() {
-  if (remoteCache.digest && Date.now() - remoteCache.at < 60000) return remoteCache.digest;
-  const repoPath = IMAGE_REPO.replace(/^ghcr\.io\//, '');
-  const tokenRes = await fetch(`https://ghcr.io/token?service=ghcr.io&scope=repository:${repoPath}:pull`, {
-    signal: AbortSignal.timeout(8000)
-  });
-  if (!tokenRes.ok) throw new Error(`GHCR token 请求失败 ${tokenRes.status}`);
-  const { token } = await tokenRes.json();
-  const res = await fetch(`https://ghcr.io/v2/${repoPath}/manifests/latest`, {
-    method: 'HEAD',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: [
-        'application/vnd.oci.image.index.v1+json',
-        'application/vnd.docker.distribution.manifest.list.v2+json',
-        'application/vnd.docker.distribution.manifest.v2+json',
-        'application/vnd.oci.image.manifest.v1+json'
-      ].join(', ')
-    },
-    signal: AbortSignal.timeout(8000)
-  });
-  if (!res.ok) throw new Error(`GHCR 清单请求失败 ${res.status}`);
-  const digest = res.headers.get('docker-content-digest') || '';
-  if (digest) remoteCache = { digest, at: Date.now() };
-  return digest;
+async function remoteDigest(force = false) {
+  if (!force && remoteCache.digest && Date.now() - remoteCache.at < 60000) return remoteCache.digest;
+  try {
+    const repoPath = IMAGE_REPO.replace(/^ghcr\.io\//, '');
+    const tokenRes = await fetch(`https://ghcr.io/token?service=ghcr.io&scope=repository:${repoPath}:pull`, {
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!tokenRes.ok) throw new Error(`GHCR token 请求失败 ${tokenRes.status}`);
+    const { token } = await tokenRes.json();
+    const res = await fetch(`https://ghcr.io/v2/${repoPath}/manifests/latest`, {
+      method: 'HEAD',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: [
+          'application/vnd.oci.image.index.v1+json',
+          'application/vnd.docker.distribution.manifest.list.v2+json',
+          'application/vnd.docker.distribution.manifest.v2+json',
+          'application/vnd.oci.image.manifest.v1+json'
+        ].join(', ')
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) throw new Error(`GHCR 清单请求失败 ${res.status}`);
+    const digest = res.headers.get('docker-content-digest') || '';
+    if (digest) remoteCache = { digest, at: Date.now() };
+    return digest;
+  } catch (e) {
+    // 强制刷新时 GHCR 偶尔失败也别把页面置空，fallback 到上次查到的摘要
+    if (force && remoteCache.digest) return remoteCache.digest;
+    throw e;
+  }
 }
 
-async function versionInfo() {
+async function versionInfo(force = false) {
   let current = { image_id: '', digest: '' };
   try {
     const d = await discover();
@@ -145,7 +153,7 @@ async function versionInfo() {
   } catch (e) { /* 容器不在时留空 */ }
   let remote = '';
   try {
-    remote = await remoteDigest();
+    remote = await remoteDigest(force);
   } catch (e) { /* 查不到远程不阻塞页面 */ }
   return {
     image: IMAGE,
@@ -275,7 +283,7 @@ const server = http.createServer(async (req, res) => {
   }
   try {
     if (url.pathname === '/status' && req.method === 'GET') {
-      const version = await versionInfo();
+      const version = await versionInfo(url.searchParams.get('force') === '1');
       return sendJson(res, 200, { enabled: true, version, job });
     }
     if (url.pathname === '/update' && req.method === 'POST') {

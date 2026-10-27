@@ -26,7 +26,9 @@ router.get('/update-status', authMiddleware, async (req, res) => {
     return res.json({ enabled: false, error: '尚未配置 UPDATER_TOKEN，更新功能未启用' });
   }
   try {
-    const { status, body } = await callUpdater('/status');
+    // 把 ?force=1 这类查询原样透传给 updater，让「检查更新」能绕过远程摘要缓存
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    const { status, body } = await callUpdater('/status' + qs);
     if (status === 503) {
       return res.json({ enabled: false, error: body.error || '更新服务未启用' });
     }

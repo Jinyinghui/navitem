@@ -6,7 +6,7 @@
           <h2 class="text-base font-bold text-slate-100">系统更新</h2>
           <p class="text-xs text-slate-400 mt-1">一键把本站升级到最新镜像：拉取 → 重建容器 → 健康检查，新版本起不来会自动回滚旧版本。更新期间站点会短暂中断几秒，数据库与上传文件不受影响。</p>
         </div>
-        <button type="button" :disabled="loading" class="shrink-0 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition disabled:opacity-50" @click="load">
+        <button type="button" :disabled="loading" class="shrink-0 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs font-semibold text-slate-300 transition disabled:opacity-50" @click="load(true)">
           {{ loading ? '查询中…' : '检查更新' }}
         </button>
       </div>
@@ -103,11 +103,13 @@ function shortDigest(d) {
   return d.length > 24 ? d.slice(0, 24) + '…' : d;
 }
 
-async function load() {
+async function load(force = false) {
   loading.value = true;
   loadError.value = '';
   try {
-    const { data } = await getSystemUpdateStatus();
+    // 点「检查更新」时 force=true，绕过 updater 的 60 秒远程摘要缓存现查；
+    // 进页自动检查和更新轮询走缓存，避免频繁打 GHCR
+    const { data } = await getSystemUpdateStatus(force);
     info.value = data;
     if (data?.job?.state === 'running') startPolling();
     else stopPolling();

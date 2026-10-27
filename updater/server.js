@@ -190,8 +190,11 @@ async function runUpdate() {
   try {
     job.step = 'precheck';
     logLine('开始检查更新环境…');
-    if (!fs.existsSync(`${COMPOSE_MOUNT}/docker-compose.yml`)) {
-      throw new Error(`在 ${COMPOSE_MOUNT} 没找到 docker-compose.yml（部署目录挂载不正确）`);
+    // compose 文件有四种标准名（.yml/.yaml），只认 .yml 会在 .yaml 部署上误报挂载问题
+    const composeFile = ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml']
+      .find(f => fs.existsSync(`${COMPOSE_MOUNT}/${f}`));
+    if (!composeFile) {
+      throw new Error(`在 ${COMPOSE_MOUNT} 没找到 compose 文件（docker-compose.yml/.yaml），请检查部署目录挂载`);
     }
     meta = await discover();
     if (!meta.project) throw new Error(`容器 ${TARGET_CONTAINER} 缺少 compose 项目标签，无法定位 compose 项目`);

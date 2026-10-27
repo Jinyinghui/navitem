@@ -101,8 +101,9 @@
 
     <!-- Portal Content -->
     <div class="relative z-10 flex flex-col min-h-screen">
-      <!-- Top Glass Navbar -->
-      <header class="glass-nav sticky top-0 z-40 px-4 sm:px-6 py-3">
+      <!-- Top Glass Navbar + Frozen Search：顶栏与搜索区共用 sticky 容器，滚动时一起冻结在顶部 -->
+      <div class="glass-nav sticky top-0 z-40">
+      <header class="px-4 sm:px-6 py-3">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
           <!-- Brand -->
           <button type="button" class="flex items-center gap-2.5 text-left group focus:outline-none" @click="resetToHome">
@@ -244,10 +245,9 @@
           </div>
         </div>
       </header>
-
-      <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
-      <section class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-5 flex flex-col items-center">
-        <!-- Search Engine Tabs -->
+      <!-- Frozen Search：引擎切换 + 搜索框随顶栏冻结，滚动时保持可见 -->
+      <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-4 flex flex-col items-center">
+<!-- Search Engine Tabs -->
 <div class="w-full">
   <div class="flex flex-wrap items-center justify-center gap-1.5 mb-2.5">
                 <button
@@ -309,8 +309,12 @@
                   搜索
                 </button>
               </div>
+      </div>
+      </div>
 
-<!-- Info Rows：时钟/一言/天气 与 待办/汇率/倒计时 合并为同一网格，逐列等宽、两行等高 -->
+      <!-- Hero Clock, Weather Reminder & Multi-Engine Search Section -->
+      <section class="w-full max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-5 flex flex-col items-center">
+        <!-- Info Rows：时钟/一言/天气 与 待办/汇率/倒计时 合并为同一网格，逐列等宽、两行等高 -->
 <div class="w-full grid grid-cols-1 sm:grid-cols-3 auto-rows-fr gap-3 lg:gap-4 mt-5 select-none">
   <div class="glass-card rounded-2xl px-5 py-3 text-center sm:text-left flex flex-col justify-center">
       <div class="text-4xl sm:text-5xl font-extrabold tracking-tight">{{ currentTime }}</div>

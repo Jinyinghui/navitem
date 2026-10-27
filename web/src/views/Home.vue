@@ -101,9 +101,9 @@
 
     <!-- Portal Content -->
     <div class="relative z-10 flex flex-col min-h-screen">
-      <!-- Top Glass Navbar + Frozen Search：顶栏与搜索区共用 sticky 容器，滚动时一起冻结在顶部 -->
-      <div class="glass-nav sticky top-0 z-40">
-      <header class="px-4 sm:px-6 py-3">
+      <!-- Top Glass Navbar + Frozen Search：顶栏与搜索区共用 sticky 容器，滚动时一起冻结在顶部；毛玻璃背景只留在顶栏，搜索区保持原来透明 -->
+      <div class="sticky top-0 z-40">
+      <header class="glass-nav px-4 sm:px-6 py-3">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-between gap-3">
           <!-- Brand -->
           <button type="button" class="flex items-center gap-2.5 text-left group focus:outline-none" @click="resetToHome">
